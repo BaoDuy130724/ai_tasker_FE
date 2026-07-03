@@ -27,6 +27,7 @@ import { AdminUserListPage } from "@/features/admin/pages/AdminUserListPage"
 import { AdminCertificatePage } from "@/features/admin/pages/AdminCertificatePage"
 import { AdminJobListPage } from "@/features/admin/pages/AdminJobListPage"
 import { AdminServiceListPage } from "@/features/admin/pages/AdminServiceListPage"
+import { AdminDisputeListPage } from "@/features/admin/pages/AdminDisputeListPage"
 import { ChatPage } from "@/features/messaging/pages/ChatPage"
 import { ProfilePage } from "@/features/profile/pages/ProfilePage"
 
@@ -81,6 +82,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/admin/jobs" element={<AdminJobListPage />} />
             <Route path="/admin/services" element={<AdminServiceListPage />} />
             <Route path="/admin/certificates" element={<AdminCertificatePage />} />
+            <Route path="/admin/disputes" element={<AdminDisputeListPage />} />
           </Route>
         </Route>
       </Route>

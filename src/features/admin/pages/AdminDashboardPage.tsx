@@ -103,7 +103,7 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
             <h3 className="font-bold text-lg border-b pb-3">Phím tắt quản trị nhanh</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link to="/admin/users" className="block border rounded-xl p-4 hover:bg-secondary/40 transition-all">
                 <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
                   Quản lý tài khoản người dùng
@@ -118,6 +118,14 @@ export const AdminDashboardPage: React.FC = () => {
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </h4>
                 <p className="text-xs text-muted-foreground mt-1">Duyệt hồ sơ năng lực của các Expert để cấp dấu tích xanh uy tín.</p>
+              </Link>
+
+              <Link to="/admin/disputes" className="block border rounded-xl p-4 hover:bg-secondary/40 transition-all">
+                <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                  Xử lý tranh chấp hợp đồng
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">Xem xét bằng chứng khiếu nại và đưa ra phán quyết Escrow hoàn trả hoặc giải ngân.</p>
               </Link>
             </div>
           </div>

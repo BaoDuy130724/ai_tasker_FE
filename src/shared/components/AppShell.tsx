@@ -23,6 +23,7 @@ import {
   ShoppingBag,
   BrainCircuit,
   Heart,
+  Scale,
 } from "lucide-react"
 
 export const AppShell: React.FC = () => {
@@ -103,6 +104,7 @@ export const AppShell: React.FC = () => {
           { to: "/admin/jobs", label: "Quản lý Job", icon: Briefcase },
           { to: "/admin/services", label: "Quản lý Dịch vụ", icon: Layers },
           { to: "/admin/certificates", label: "Duyệt Chứng chỉ", icon: Star },
+          { to: "/admin/disputes", label: "Xử lý Tranh chấp", icon: Scale },
         ]
       default:
         return commonLinks

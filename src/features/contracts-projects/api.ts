@@ -28,6 +28,7 @@ export interface Dispute {
   id: number
   projectId: number
   openedBy: number
+  openerRole: string
   description: string
   evidenceFileUrl: string | null
   status: number
@@ -146,4 +147,11 @@ export const resolveDispute = async (disputeId: number, resolution: number) => {
     resolution,
   })
   return response.data?.data
+}
+
+export const getDisputes = async (projectId?: number) => {
+  const response = await projectApi.get<ApiResponse<Dispute[]>>("/disputes", {
+    params: projectId ? { projectId } : {},
+  })
+  return response.data?.data || []
 }
