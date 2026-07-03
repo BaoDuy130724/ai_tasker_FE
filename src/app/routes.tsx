@@ -4,6 +4,7 @@ import { AppShell } from "@/shared/components/AppShell"
 import { ProtectedRoute } from "@/shared/components/ProtectedRoute"
 import { LoginPage } from "@/features/auth/pages/LoginPage"
 import { RegisterPage } from "@/features/auth/pages/RegisterPage"
+import { HomePage } from "@/features/home/pages/HomePage"
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
 import { NotificationListPage } from "@/features/notifications/pages/NotificationListPage"
 import { CreateJobPage } from "@/features/jobs/pages/CreateJobPage"
@@ -35,6 +36,7 @@ export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
@@ -42,7 +44,7 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           {/* Dashboard chung (tự render theo role) */}
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
 
           {/* Common routes */}
           <Route path="/messages" element={<ChatPage />} />

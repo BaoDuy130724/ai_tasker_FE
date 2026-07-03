@@ -24,6 +24,7 @@ import {
   BrainCircuit,
   Heart,
   Scale,
+  Home,
 } from "lucide-react"
 
 export const AppShell: React.FC = () => {
@@ -69,7 +70,8 @@ export const AppShell: React.FC = () => {
     if (!user) return []
 
     const commonLinks = [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/", label: "Xem Trang chủ", icon: Home },
       { to: "/messages", label: "Tin nhắn", icon: MessageSquare },
     ]
 
@@ -118,7 +120,7 @@ export const AppShell: React.FC = () => {
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border md:bg-card">
         <div className="flex h-16 items-center px-6 border-b border-border">
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
+          <Link to={user?.role === "Admin" ? "/admin/kpi" : "/dashboard"} className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
             <Sparkles className="h-6 w-6" />
             AI Tasker
           </Link>
@@ -229,7 +231,7 @@ export const AppShell: React.FC = () => {
           {/* Menu Panel */}
           <div className="relative flex w-full max-w-xs flex-col bg-card h-full p-6 shadow-xl transition-transform duration-300">
             <div className="flex items-center justify-between pb-6 border-b border-border">
-              <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+              <Link to={user?.role === "Admin" ? "/admin/kpi" : "/dashboard"} className="flex items-center gap-2 font-bold text-xl text-primary">
                 <Sparkles className="h-6 w-6" />
                 AI Tasker
               </Link>

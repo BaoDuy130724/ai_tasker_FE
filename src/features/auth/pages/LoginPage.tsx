@@ -6,7 +6,7 @@ import { useAuthStore } from "../store"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { identityApi } from "@/shared/api/client"
-import { Sparkles, ShieldCheck, Zap, MessageSquareCode } from "lucide-react"
+import { Sparkles, ShieldCheck, Zap, MessageSquareCode, Eye, EyeOff, ArrowLeft } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email không hợp lệ" }),
@@ -20,6 +20,7 @@ export const LoginPage: React.FC = () => {
   const setAuth = useAuthStore((state) => state.setAuth)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -44,7 +45,7 @@ export const LoginPage: React.FC = () => {
         role: roles && roles.length > 0 ? roles[0] : "Client"
       }
       setAuth(user as any, accessToken, refreshToken)
-      navigate("/")
+      navigate(user.role === "Admin" ? "/admin/kpi" : "/dashboard")
     } catch (err: any) {
       console.error(err)
       if (err.response) {
@@ -69,10 +70,10 @@ export const LoginPage: React.FC = () => {
         {/* Glow effect */}
         <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
         
-        <div className="relative z-10 flex items-center gap-2.5 font-bold text-xl tracking-tight text-primary">
+        <Link to="/" className="relative z-10 flex items-center gap-2.5 font-bold text-xl tracking-tight text-primary hover:opacity-90 transition-opacity">
           <Sparkles className="h-6 w-6" />
           AI Tasker
-        </div>
+        </Link>
 
         <div className="relative z-10 my-auto max-w-lg space-y-6">
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
@@ -124,6 +125,10 @@ export const LoginPage: React.FC = () => {
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 sm:px-12 lg:px-20 bg-background">
         <div className="mx-auto w-full max-w-md space-y-8">
           <div>
+            <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors font-medium">
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại trang chủ
+            </Link>
             <div className="lg:hidden flex items-center gap-2 font-bold text-2xl text-primary mb-6">
               <Sparkles className="h-6 w-6" />
               AI Tasker
@@ -172,16 +177,25 @@ export const LoginPage: React.FC = () => {
                     Quên mật khẩu?
                   </a>
                 </div>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  {...register("password")}
-                  className={`w-full rounded-lg border bg-card px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
-                    errors.password ? "border-destructive focus:ring-destructive" : "border-input"
-                  }`}
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    {...register("password")}
+                    className={`w-full rounded-lg border bg-card pl-3.5 pr-10 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                      errors.password ? "border-destructive focus:ring-destructive" : "border-input"
+                    }`}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
                 )}
