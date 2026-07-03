@@ -38,7 +38,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   fetchNotifications: async () => {
     set({ isLoading: true })
     try {
-      const response = await notificationApi.get("")
+      const response = await notificationApi.get("/notifications")
       // Backend bọc response trong ApiResponse: { success: true, data: [...] }
       const data = response.data?.data || response.data || []
       const notifications = Array.isArray(data) ? data : []
@@ -54,7 +54,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   markAsRead: async (id: number) => {
     try {
-      await notificationApi.put(`/${id}/read`)
+      await notificationApi.put(`/notifications/${id}/read`)
       const notifications = get().notifications.map((n) =>
         n.id === id ? { ...n, isRead: true } : n
       )
@@ -67,7 +67,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   markAllAsRead: async () => {
     try {
-      await notificationApi.put("/read-all")
+      await notificationApi.put("/notifications/read-all")
       const notifications = get().notifications.map((n) => ({ ...n, isRead: true }))
       set({ notifications, unreadCount: 0 })
     } catch (error) {

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { getServiceById } from "../api"
+import { getServiceById, getFavorites, addFavorite, removeFavorite } from "../api"
 import type { AiService } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
-import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles } from "lucide-react"
+import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles, Heart } from "lucide-react"
 
 export const AiServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +14,8 @@ export const AiServiceDetailPage: React.FC = () => {
   const [service, setService] = useState<AiService | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
 
   useEffect(() => {
     const fetchServiceDetail = async () => {
@@ -32,6 +34,32 @@ export const AiServiceDetailPage: React.FC = () => {
     }
     fetchServiceDetail()
   }, [id])
+
+  useEffect(() => {
+    if (!id || !user) return
+    getFavorites()
+      .then((favs) => setIsFavorited(favs.some((f) => f.serviceId === Number(id))))
+      .catch((err) => console.error("Lỗi tải danh sách yêu thích:", err))
+  }, [id, user])
+
+  const handleToggleFavorite = async () => {
+    if (!id) return
+    setIsTogglingFavorite(true)
+    try {
+      if (isFavorited) {
+        await removeFavorite(Number(id))
+        setIsFavorited(false)
+      } else {
+        await addFavorite(Number(id))
+        setIsFavorited(true)
+      }
+    } catch (err: any) {
+      console.error(err)
+      alert(err.response?.data?.message || "Thao tác yêu thích thất bại.")
+    } finally {
+      setIsTogglingFavorite(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -81,7 +109,19 @@ export const AiServiceDetailPage: React.FC = () => {
                   {service.rating || "5.0"}
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">{service.title}</h1>
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">{service.title}</h1>
+                {user && !isOwner && (
+                  <button
+                    onClick={handleToggleFavorite}
+                    disabled={isTogglingFavorite}
+                    className="shrink-0 h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-all bg-transparent cursor-pointer disabled:opacity-50"
+                    aria-label={isFavorited ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                  >
+                    <Heart className={`h-4 w-4 transition-colors ${isFavorited ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Description */}

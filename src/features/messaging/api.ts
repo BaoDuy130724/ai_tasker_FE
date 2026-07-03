@@ -32,3 +32,8 @@ export const getChatHistory = async (sessionId: string) => {
   const response = await messagingApi.get<ChatMessage[]>(`/Chat/sessions/${sessionId}/messages`)
   return response.data || []
 }
+
+export const markSessionAsRead = async (sessionId: string, userId: string) => {
+  const response = await messagingApi.put(`/Chat/sessions/${sessionId}/read/${userId}`)
+  return response.data
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
-import { getOrCreateSession, getUserSessions, getChatHistory, intToGuid } from "../api"
+import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead, intToGuid } from "../api"
 import type { ChatSession, ChatMessage } from "../types"
 import * as signalR from "@microsoft/signalr"
 import { Button } from "@/components/ui/button"
@@ -71,7 +71,7 @@ export const ChatPage: React.FC = () => {
     loadSessions()
   }, [user, targetExpertId])
 
-  // 2. Tải lịch sử chat khi chọn session
+  // 2. Tải lịch sử chat khi chọn session + đánh dấu đã đọc
   useEffect(() => {
     const fetchHistory = async () => {
       if (!activeSession) return
@@ -83,6 +83,13 @@ export const ChatPage: React.FC = () => {
       }
     }
     fetchHistory()
+
+    if (activeSession && myGuid) {
+      markSessionAsRead(activeSession.id, myGuid).catch((err) =>
+        console.error("Lỗi đánh dấu đã đọc:", err)
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSession])
 
   // 3. Kết nối SignalR Chat Hub

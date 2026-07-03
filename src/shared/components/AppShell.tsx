@@ -4,6 +4,7 @@ import { useAuthStore } from "@/features/auth/store"
 import { useNotificationStore } from "@/features/notifications/store"
 import { AiAssistantSidebar } from "./AiAssistantSidebar"
 import { Button } from "@/components/ui/button"
+import { identityApi } from "@/shared/api/client"
 import {
   LayoutDashboard,
   Briefcase,
@@ -21,6 +22,7 @@ import {
   Star,
   ShoppingBag,
   BrainCircuit,
+  Heart,
 } from "lucide-react"
 
 export const AppShell: React.FC = () => {
@@ -49,7 +51,14 @@ export const AppShell: React.FC = () => {
     }
   }, [accessToken, startSignalR, stopSignalR, fetchNotifications])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Best-effort: thu hồi refresh token phía BE. Nếu lỗi (mạng, token hết hạn...)
+      // vẫn cho đăng xuất bình thường ở FE, không chặn user.
+      await identityApi.post("/auth/logout")
+    } catch (err) {
+      console.error("Lỗi gọi logout BE (bỏ qua, vẫn đăng xuất ở FE):", err)
+    }
     clearAuth()
     navigate("/login")
   }
@@ -71,7 +80,9 @@ export const AppShell: React.FC = () => {
           { to: "/client/jobs", label: "Quản lý Job", icon: Briefcase },
           { to: "/client/projects", label: "Dự án & Hợp đồng", icon: FileText },
           { to: "/marketplace", label: "Marketplace AI", icon: Search },
+          { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },
           { to: "/client/orders", label: "Đơn mua dịch vụ", icon: ShoppingBag },
+          { to: "/profile/me", label: "Hồ sơ của tôi", icon: User },
         ]
       case "Expert":
         return [
@@ -80,6 +91,7 @@ export const AppShell: React.FC = () => {
           { to: "/expert/proposals", label: "Proposals của tôi", icon: FileText },
           { to: "/expert/projects", label: "Dự án nhận làm", icon: Layers },
           { to: "/expert/services", label: "Dịch vụ của tôi", icon: Briefcase },
+          { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },
           { to: "/expert/orders", label: "Đơn đặt hàng", icon: ShoppingBag },
           { to: "/profile/me", label: "Hồ sơ của tôi", icon: User },
         ]
@@ -88,6 +100,8 @@ export const AppShell: React.FC = () => {
           ...commonLinks,
           { to: "/admin/kpi", label: "Dashboard KPI", icon: Shield },
           { to: "/admin/users", label: "Quản lý Users", icon: User },
+          { to: "/admin/jobs", label: "Quản lý Job", icon: Briefcase },
+          { to: "/admin/services", label: "Quản lý Dịch vụ", icon: Layers },
           { to: "/admin/certificates", label: "Duyệt Chứng chỉ", icon: Star },
         ]
       default:

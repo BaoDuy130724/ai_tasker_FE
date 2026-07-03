@@ -122,8 +122,11 @@ export interface GetTransactionsParams {
 }
 
 export const getTransactionHistory = async (params: GetTransactionsParams) => {
-  const response = await projectApi.get<ApiResponse<any>>("/escrow/transactions", { params })
-  return response.data?.data
+  const response = await projectApi.get<ApiResponse<{ items: EscrowTransaction[]; totalCount: number }>>(
+    "/escrow/transactions",
+    { params }
+  )
+  return response.data?.data?.items || []
 }
 
 // Dispute APIs

@@ -20,3 +20,17 @@ export interface DashboardKpi {
   totalJobs: number
   totalServices: number
 }
+
+export interface AdminJob {
+  id: number
+  title: string
+  status: string
+  ownerUserId: number
+}
+
+export interface AdminService {
+  id: number
+  title: string
+  price: number
+  expertUserId: number
+}

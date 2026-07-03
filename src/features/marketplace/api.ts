@@ -1,5 +1,5 @@
 import { marketplaceApi } from "@/shared/api/client"
-import type { AiService, Category } from "./types"
+import type { AiService, Category, Favorite } from "./types"
 import type { ApiResponse } from "@/features/jobs/api"
 import type { PagedResult } from "@/features/jobs/api"
 
@@ -64,4 +64,20 @@ export const deleteService = async (id: number) => {
 export const getCategories = async () => {
   const response = await marketplaceApi.get<Category[]>("/categories")
   return response.data || []
+}
+
+// Favorites APIs
+export const getFavorites = async () => {
+  const response = await marketplaceApi.get<ApiResponse<Favorite[]>>("/favorites")
+  return response.data?.data || []
+}
+
+export const addFavorite = async (serviceId: number) => {
+  const response = await marketplaceApi.post<ApiResponse<Favorite>>("/favorites", { serviceId })
+  return response.data?.data
+}
+
+export const removeFavorite = async (serviceId: number) => {
+  const response = await marketplaceApi.delete<ApiResponse<boolean>>(`/favorites/${serviceId}`)
+  return response.data?.data
 }

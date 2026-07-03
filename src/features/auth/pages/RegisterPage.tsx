@@ -11,7 +11,7 @@ const registerSchema = z.object({
   fullName: z.string().min(2, { message: "Họ tên phải từ 2 ký tự trở lên" }),
   email: z.string().email({ message: "Email không hợp lệ" }),
   password: z.string().min(6, { message: "Mật khẩu phải từ 6 ký tự trở lên" }),
-  role: z.enum(["Client", "Expert"]),
+  role: z.enum(["Client", "Expert", "Admin"]),
 })
 
 type RegisterFormValues = z.infer<typeof registerSchema>
@@ -211,32 +211,45 @@ export const RegisterPage: React.FC = () => {
                 <label className="block text-sm font-semibold text-foreground mb-2.5">
                   Tôi muốn tham gia với vai trò:
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={() => setValue("role", "Client")}
-                    className={`flex flex-col items-start rounded-xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
+                    className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all cursor-pointer relative overflow-hidden ${
                       selectedRole === "Client"
                         ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
                         : "border-input bg-card hover:bg-muted"
                     }`}
                   >
-                    <User className="h-5 w-5 mb-2" />
-                    <span className="text-sm font-bold">Khách hàng</span>
-                    <span className="text-xs text-muted-foreground mt-1 leading-snug">Tôi cần đăng tuyển và thuê Expert làm dự án</span>
+                    <User className="h-4 w-4 mb-1.5" />
+                    <span className="text-xs font-bold">Khách hàng</span>
+                    <span className="text-[10px] text-muted-foreground mt-1 leading-tight">Tôi muốn đăng tuyển thuê Expert</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setValue("role", "Expert")}
-                    className={`flex flex-col items-start rounded-xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
+                    className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all cursor-pointer relative overflow-hidden ${
                       selectedRole === "Expert"
                         ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
                         : "border-input bg-card hover:bg-muted"
                     }`}
                   >
-                    <Briefcase className="h-5 w-5 mb-2" />
-                    <span className="text-sm font-bold">Expert Freelancer</span>
-                    <span className="text-xs text-muted-foreground mt-1 leading-snug">Tôi muốn tìm việc và cung cấp gói dịch vụ AI</span>
+                    <Briefcase className="h-4 w-4 mb-1.5" />
+                    <span className="text-xs font-bold">Expert Freelance</span>
+                    <span className="text-[10px] text-muted-foreground mt-1 leading-tight">Tôi muốn tìm việc và bán dịch vụ</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue("role", "Admin")}
+                    className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all cursor-pointer relative overflow-hidden ${
+                      selectedRole === "Admin"
+                        ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/20"
+                        : "border-input bg-card hover:bg-muted"
+                    }`}
+                  >
+                    <ShieldCheck className="h-4 w-4 mb-1.5 text-primary" />
+                    <span className="text-xs font-bold">Admin Portal</span>
+                    <span className="text-[10px] text-muted-foreground mt-1 leading-tight">Quản trị và kiểm duyệt hệ thống</span>
                   </button>
                 </div>
               </div>

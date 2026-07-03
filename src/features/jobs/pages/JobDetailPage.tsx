@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { getJobById, closeJob } from "../api"
+import { getJobById, closeJob, updateJob } from "../api"
 import type { Job } from "../types"
 import { JobStatus } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
-import { Calendar, DollarSign, ArrowLeft, ShieldAlert, Sparkles, UserCheck } from "lucide-react"
+import { Calendar, DollarSign, ArrowLeft, ShieldAlert, Sparkles, UserCheck, Edit3 } from "lucide-react"
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  
+
   const [job, setJob] = useState<Job | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isClosing, setIsClosing] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [editForm, setEditForm] = useState({ title: "", description: "", budget: 0, deadline: "", skillsText: "" })
 
   const fetchJobDetail = async () => {
     if (!id) return
@@ -49,6 +52,41 @@ export const JobDetailPage: React.FC = () => {
       alert(err.response?.data?.message || "Đóng công việc thất bại. Chỉ chủ sở hữu mới có quyền.")
     } finally {
       setIsClosing(false)
+    }
+  }
+
+  const handleOpenEdit = () => {
+    if (!job) return
+    setEditForm({
+      title: job.title,
+      description: job.description,
+      budget: job.budget,
+      deadline: job.deadline.slice(0, 10),
+      skillsText: job.skills.join(", "),
+    })
+    setIsEditing(true)
+  }
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!job || !user) return
+    setIsSavingEdit(true)
+    try {
+      await updateJob(job.id, {
+        title: editForm.title,
+        description: editForm.description,
+        budget: editForm.budget,
+        deadline: editForm.deadline,
+        skills: editForm.skillsText.split(",").map((s) => s.trim()).filter(Boolean),
+        clientId: Number(user.id),
+      })
+      setIsEditing(false)
+      await fetchJobDetail()
+    } catch (err: any) {
+      console.error(err)
+      alert(err.response?.data?.message || "Cập nhật công việc thất bại.")
+    } finally {
+      setIsSavingEdit(false)
     }
   }
 
@@ -181,11 +219,12 @@ export const JobDetailPage: React.FC = () => {
                 </Button>
               )}
               <Button
+                onClick={handleOpenEdit}
                 variant="outline"
-                className="border-border hover:bg-secondary transition-all"
-                disabled
+                className="border-border hover:bg-secondary transition-all flex items-center gap-1.5"
               >
-                Chỉnh sửa công việc (Phase sau)
+                <Edit3 className="h-4 w-4" />
+                Chỉnh sửa công việc
               </Button>
             </>
           )}
@@ -207,6 +246,77 @@ export const JobDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Job Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEditing(false)} />
+          <form onSubmit={handleSaveEdit} className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-xl p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+            <h3 className="font-bold text-lg text-primary flex items-center gap-1.5">
+              <Edit3 className="h-5 w-5" />
+              Chỉnh sửa công việc
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-semibold mb-1">Tiêu đề</label>
+                <input
+                  type="text" required
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Mô tả</label>
+                <textarea
+                  rows={4} required
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Ngân sách ($)</label>
+                  <input
+                    type="number" required min={1}
+                    value={editForm.budget || ""}
+                    onChange={(e) => setEditForm({ ...editForm, budget: Number(e.target.value) })}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Hạn chót</label>
+                  <input
+                    type="date" required
+                    value={editForm.deadline}
+                    onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Kỹ năng (phân cách bởi dấu phẩy)</label>
+                <input
+                  type="text" required
+                  value={editForm.skillsText}
+                  onChange={(e) => setEditForm({ ...editForm, skillsText: e.target.value })}
+                  placeholder="React, Node.js, PostgreSQL"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Hủy</Button>
+              <Button type="submit" disabled={isSavingEdit} className="bg-primary text-primary-foreground">
+                {isSavingEdit ? "Đang lưu..." : "Lưu thay đổi"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

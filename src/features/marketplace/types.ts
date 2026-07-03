@@ -22,3 +22,11 @@ export interface Category {
   description: string | null
   parentId: number | null
 }
+
+export interface Favorite {
+  id: number
+  clientId: number
+  serviceId: number
+  createdAt: string
+  service: AiService
+}

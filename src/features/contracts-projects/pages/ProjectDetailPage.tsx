@@ -9,11 +9,15 @@ import {
   submitDeliverable,
   depositEscrow,
   withdrawEscrow,
-  openDispute
+  openDispute,
+  getTransactionHistory
 } from "../api"
+import type { EscrowTransaction } from "../api"
 import type { Project, Milestone } from "../types"
 import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
+import { ReviewSection } from "@/features/reviews/components/ReviewSection"
+import { intToGuid } from "@/features/reviews/api"
 import {
   DollarSign,
   ArrowLeft,
@@ -38,6 +42,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   const [project, setProject] = useState<Project | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [transactions, setTransactions] = useState<EscrowTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   
@@ -70,6 +75,8 @@ export const ProjectDetailPage: React.FC = () => {
       if (data) {
         setProject(data.project)
         setMilestones(data.milestones || [])
+        const txs = await getTransactionHistory({ projectId: data.project.id, pageSize: 20 })
+        setTransactions(txs)
       }
     } catch (err: any) {
       console.error(err)
@@ -372,6 +379,30 @@ export const ProjectDetailPage: React.FC = () => {
             <p className="text-xl font-extrabold text-amber-600 mt-1">${project.escrowLockedBalance} USD</p>
           </div>
         </div>
+
+        {/* Lịch sử giao dịch Escrow */}
+        {transactions.length > 0 && (
+          <div className="pt-3 border-t border-border/50 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Lịch sử giao dịch</p>
+            <div className="space-y-1.5 max-h-56 overflow-y-auto">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between text-xs bg-secondary/10 border border-border/40 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold uppercase text-[10px] rounded px-1.5 py-0.5 border ${
+                      tx.typeName === "Deposit" || tx.typeName === "Release"
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    }`}>
+                      {tx.typeName}
+                    </span>
+                    <span className="text-muted-foreground">{new Date(tx.createdAt).toLocaleString("vi-VN")}</span>
+                  </div>
+                  <span className="font-bold text-foreground">${tx.amount}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* State Machine Stepper */}
@@ -545,6 +576,17 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Review Section — chỉ hiện khi Project đã Closed (đúng nghiệp vụ BE: "đánh giá 2 chiều sau project") */}
+      {project.status === ProjectStatus.Closed && user && (isClient || isExpert) && (
+        <ReviewSection
+          projectId={project.id}
+          projectGuid={intToGuid(project.id)}
+          currentUserId={Number(user.id)}
+          counterpartId={isClient ? project.expertId : project.clientId}
+          counterpartLabel={isClient ? "Expert" : "Client"}
+        />
+      )}
 
       {/* --- ALL MODALS --- */}
 

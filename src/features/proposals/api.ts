@@ -18,3 +18,8 @@ export const getProposalsByJob = async (jobId: number) => {
   const response = await projectApi.get<ApiResponse<Proposal[]>>(`/proposals/by-job/${jobId}`)
   return response.data?.data || []
 }
+
+export const getMyProposals = async () => {
+  const response = await projectApi.get<ApiResponse<Proposal[]>>("/proposals/my-proposals")
+  return response.data?.data || []
+}
