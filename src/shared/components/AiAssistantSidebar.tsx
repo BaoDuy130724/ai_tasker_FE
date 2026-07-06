@@ -128,7 +128,7 @@ export const AiAssistantSidebar: React.FC<{ onClose: () => void }> = ({ onClose 
   }
 
   return (
-    <div className="w-80 border-l border-border bg-card h-full flex flex-col shadow-xl z-40 relative animate-in slide-in-from-right transition-all">
+    <div className="fixed bottom-20 right-6 left-6 md:left-auto md:w-96 h-[500px] max-h-[calc(100vh-120px)] border border-border bg-card flex flex-col rounded-2xl shadow-2xl z-50 animate-in slide-in-from-bottom-5 duration-200">
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between bg-primary/5">
         <div className="flex items-center gap-2 text-primary font-bold text-sm">

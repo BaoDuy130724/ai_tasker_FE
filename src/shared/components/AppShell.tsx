@@ -24,7 +24,8 @@ import {
   BrainCircuit,
   Heart,
   Scale,
-  Home,
+  Sun,
+  Moon,
 } from "lucide-react"
 
 export const AppShell: React.FC = () => {
@@ -33,6 +34,29 @@ export const AppShell: React.FC = () => {
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAiOpen, setIsAiOpen] = useState(false)
+
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("theme")
+      if (stored === "dark" || stored === "light") return stored
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    }
+    return "light"
+  })
+
+  useEffect(() => {
+    const root = window.document.documentElement
+    if (theme === "dark") {
+      root.classList.add("dark")
+    } else {
+      root.classList.remove("dark")
+    }
+    localStorage.setItem("theme", theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === "dark" ? "light" : "dark"))
+  }
 
   const { accessToken } = useAuthStore()
   const { startSignalR, stopSignalR, fetchNotifications, unreadCount } = useNotificationStore()
@@ -71,7 +95,6 @@ export const AppShell: React.FC = () => {
 
     const commonLinks = [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/", label: "Xem Trang chủ", icon: Home },
       { to: "/messages", label: "Tin nhắn", icon: MessageSquare },
     ]
 
@@ -79,13 +102,11 @@ export const AppShell: React.FC = () => {
       case "Client":
         return [
           ...commonLinks,
-          { to: "/jobs/new", label: "Đăng Job mới", icon: Sparkles },
           { to: "/client/jobs", label: "Quản lý Job", icon: Briefcase },
           { to: "/client/projects", label: "Dự án & Hợp đồng", icon: FileText },
           { to: "/marketplace", label: "Marketplace AI", icon: Search },
           { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },
           { to: "/client/orders", label: "Đơn mua dịch vụ", icon: ShoppingBag },
-          { to: "/profile/me", label: "Hồ sơ của tôi", icon: User },
         ]
       case "Expert":
         return [
@@ -96,7 +117,6 @@ export const AppShell: React.FC = () => {
           { to: "/expert/services", label: "Dịch vụ của tôi", icon: Briefcase },
           { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },
           { to: "/expert/orders", label: "Đơn đặt hàng", icon: ShoppingBag },
-          { to: "/profile/me", label: "Hồ sơ của tôi", icon: User },
         ]
       case "Admin":
         return [
@@ -120,7 +140,7 @@ export const AppShell: React.FC = () => {
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border md:bg-card">
         <div className="flex h-16 items-center px-6 border-b border-border">
-          <Link to={user?.role === "Admin" ? "/admin/kpi" : "/dashboard"} className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
+          <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
             <Sparkles className="h-6 w-6" />
             AI Tasker
           </Link>
@@ -146,14 +166,23 @@ export const AppShell: React.FC = () => {
           })}
         </nav>
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-4">
-            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-              {user?.fullName?.charAt(0) || "U"}
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold truncate">{user?.fullName}</p>
-              <p className="text-xs text-muted-foreground truncate capitalize">{user?.role}</p>
-            </div>
+          <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-4">
+            <Link to="/profile/me" className="flex items-center gap-3 overflow-hidden hover:opacity-80 transition-opacity cursor-pointer group">
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
+                {user?.fullName?.charAt(0) || "U"}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{user?.fullName}</p>
+                <p className="text-xs text-muted-foreground truncate capitalize">{user?.role}</p>
+              </div>
+            </Link>
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
           <Button
             variant="outline"
@@ -204,14 +233,16 @@ export const AppShell: React.FC = () => {
             <Outlet />
             
             {/* Floating AI Assistant Bubble */}
-            {!isAiOpen && (
-              <button
-                onClick={() => setIsAiOpen(true)}
-                className="fixed bottom-6 right-6 h-12 w-12 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground shadow-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 z-40 border border-primary/20"
-              >
-                <BrainCircuit className="h-6 w-6" />
-              </button>
-            )}
+            <button
+              onClick={() => setIsAiOpen(!isAiOpen)}
+              className={`fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 z-50 border ${
+                isAiOpen 
+                  ? "bg-secondary text-foreground border-border hover:bg-secondary/90" 
+                  : "bg-primary text-primary-foreground border-primary/20 hover:bg-primary/95"
+              }`}
+            >
+              {isAiOpen ? <X className="h-6 w-6" /> : <BrainCircuit className="h-6 w-6" />}
+            </button>
           </main>
 
           {isAiOpen && (
@@ -231,7 +262,7 @@ export const AppShell: React.FC = () => {
           {/* Menu Panel */}
           <div className="relative flex w-full max-w-xs flex-col bg-card h-full p-6 shadow-xl transition-transform duration-300">
             <div className="flex items-center justify-between pb-6 border-b border-border">
-              <Link to={user?.role === "Admin" ? "/admin/kpi" : "/dashboard"} className="flex items-center gap-2 font-bold text-xl text-primary">
+              <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
                 <Sparkles className="h-6 w-6" />
                 AI Tasker
               </Link>
@@ -264,14 +295,23 @@ export const AppShell: React.FC = () => {
               })}
             </nav>
             <div className="pt-4 border-t border-border">
-              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-4">
-                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                  {user?.fullName?.charAt(0) || "U"}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold truncate">{user?.fullName}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-                </div>
+              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-4">
+                <Link to="/profile/me" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 overflow-hidden hover:opacity-80 transition-opacity cursor-pointer group">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
+                    {user?.fullName?.charAt(0) || "U"}
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{user?.fullName}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                  </div>
+                </Link>
+                <button
+                  onClick={toggleTheme}
+                  className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
+                </button>
               </div>
               <Button
                 variant="outline"
