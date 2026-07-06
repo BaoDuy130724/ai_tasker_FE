@@ -1,6 +1,10 @@
 import axios from "axios"
 import type { AxiosInstance } from "axios"
 import { useAuthStore } from "@/features/auth/store"
+// [MOCK] Lớp dữ liệu giả — xoá 3 dòng import + block "[MOCK]" bên dưới để gỡ hoàn toàn.
+import { MOCK_ENABLED, attachMock, seedLocalMocks } from "@/mocks"
+
+if (MOCK_ENABLED) seedLocalMocks()
 
 const getBaseUrl = (service: string, useGateway: boolean) => {
   const gatewayUrl = import.meta.env.VITE_API_GATEWAY_URL || "http://localhost:5088"
@@ -61,6 +65,11 @@ const createServiceInstance = (service: string): AxiosInstance => {
     },
     (error) => Promise.reject(error)
   )
+
+  // [MOCK] Bật dữ liệu giả cho mọi service trừ identity (dễ gỡ: xoá block này).
+  if (MOCK_ENABLED && service !== "identity") {
+    attachMock(instance, service)
+  }
 
   // Response Interceptor: Xử lý 401 & Refresh Token
   instance.interceptors.response.use(
