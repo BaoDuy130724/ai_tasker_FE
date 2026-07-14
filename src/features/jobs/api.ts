@@ -28,12 +28,12 @@ export interface GetJobsParams {
 }
 
 export const getJobs = async (params: GetJobsParams) => {
-  const response = await jobApi.get<ApiResponse<PagedResult<Job>>>("", { params })
+  const response = await jobApi.get<ApiResponse<PagedResult<Job>>>("/jobs", { params })
   return response.data?.data
 }
 
 export const getJobById = async (id: number) => {
-  const response = await jobApi.get<ApiResponse<Job>>(`/${id}`)
+  const response = await jobApi.get<ApiResponse<Job>>(`/jobs/${id}`)
   return response.data?.data
 }
 
@@ -47,7 +47,7 @@ export interface CreateJobInput {
 }
 
 export const createJob = async (input: CreateJobInput) => {
-  const response = await jobApi.post<ApiResponse<Job>>("", input)
+  const response = await jobApi.post<ApiResponse<Job>>("/jobs", input)
   return response.data?.data
 }
 
@@ -61,11 +61,11 @@ export interface UpdateJobInput {
 }
 
 export const updateJob = async (id: number, input: UpdateJobInput) => {
-  const response = await jobApi.put<ApiResponse<Job>>(`/${id}`, input)
+  const response = await jobApi.put<ApiResponse<Job>>(`/jobs/${id}`, input)
   return response.data?.data
 }
 
 export const closeJob = async (id: number, clientId: number) => {
-  const response = await jobApi.put<ApiResponse<any>>(`/${id}/close`, { clientId })
+  const response = await jobApi.put<ApiResponse<any>>(`/jobs/${id}/close`, { clientId })
   return response.data?.data
 }

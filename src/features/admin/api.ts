@@ -78,12 +78,12 @@ export const getPendingCertificates = async () => {
   return response.data || []
 }
 
-export const approveCertificate = async (id: string) => {
+export const approveCertificate = async (id: number) => {
   const response = await profileApi.put<any>(`/AdminCertificates/${id}/approve`)
   return response.data
 }
 
-export const rejectCertificate = async (id: string) => {
+export const rejectCertificate = async (id: number) => {
   const response = await profileApi.put<any>(`/AdminCertificates/${id}/reject`)
   return response.data
 }

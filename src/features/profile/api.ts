@@ -50,12 +50,12 @@ export const addPortfolioItem = async (input: CreatePortfolioItemInput) => {
   return response.data
 }
 
-export const deletePortfolioItem = async (id: string) => {
+export const deletePortfolioItem = async (id: number) => {
   const response = await profileApi.delete(`/Profiles/me/portfolio/${id}`)
   return response.data
 }
 
-export const addSkillToProfile = async (skillId: string) => {
+export const addSkillToProfile = async (skillId: number) => {
   const response = await profileApi.post(`/Profiles/me/skills/${skillId}`)
   return response.data
 }

@@ -206,7 +206,7 @@ export const MarketplacePage: React.FC = () => {
                       <span>Expert ID: #{service.expertId}</span>
                       <span className="flex items-center gap-0.5 text-amber-500 font-bold">
                         <Star className="h-3.5 w-3.5 fill-amber-500" />
-                        {service.rating || "5.0"}
+                        {service.averageRating || "5.0"}
                       </span>
                     </div>
 

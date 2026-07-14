@@ -1,6 +1,6 @@
 export interface Review {
-  id: string // Guid
-  projectId: string // Guid
+  id: number
+  projectId: number
   reviewerId: number
   revieweeId: number
   rating: number
@@ -10,8 +10,7 @@ export interface Review {
 }
 
 export interface ReviewReply {
-  id: string
-  reviewId: string
+  id: number
   replierId: number
   content: string
   createdAt: string

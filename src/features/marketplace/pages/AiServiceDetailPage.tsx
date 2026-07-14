@@ -106,7 +106,7 @@ export const AiServiceDetailPage: React.FC = () => {
                 <span>Danh mục ID: #{service.categoryId}</span>
                 <span className="flex items-center gap-0.5 text-amber-500 font-bold">
                   <Star className="h-3.5 w-3.5 fill-amber-500" />
-                  {service.rating || "5.0"}
+                  {service.averageRating || "5.0"}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3">

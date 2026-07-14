@@ -24,7 +24,7 @@ export const AdminCertificatePage: React.FC = () => {
     fetchCerts()
   }, [])
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn phê duyệt chứng chỉ này? Chuyên gia sẽ được cấp tích xanh uy tín.")) return
     try {
       await approveCertificate(id)
@@ -36,7 +36,7 @@ export const AdminCertificatePage: React.FC = () => {
     }
   }
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn từ chối phê duyệt chứng chỉ này?")) return
     try {
       await rejectCertificate(id)

@@ -100,7 +100,7 @@ export const ProfilePage: React.FC = () => {
   const handleAddSkill = async () => {
     if (!selectedSkillId) return
     try {
-      await addSkillToProfile(selectedSkillId)
+      await addSkillToProfile(Number(selectedSkillId))
       setSelectedSkillId("")
       await fetchProfile()
     } catch (err: any) {
@@ -122,7 +122,7 @@ export const ProfilePage: React.FC = () => {
     }
   }
 
-  const handleDeletePortfolio = async (id: string) => {
+  const handleDeletePortfolio = async (id: number) => {
     if (!window.confirm("Xóa mục portfolio này?")) return
     try {
       await deletePortfolioItem(id)

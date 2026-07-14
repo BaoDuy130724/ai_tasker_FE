@@ -17,7 +17,6 @@ import type { Project, Milestone } from "../types"
 import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
 import { ReviewSection } from "@/features/reviews/components/ReviewSection"
-import { intToGuid } from "@/features/reviews/api"
 import {
   DollarSign,
   ArrowLeft,
@@ -34,6 +33,9 @@ import {
   Edit3,
   Gavel
 } from "lucide-react"
+
+// Nhãn cho EscrowTransactionType (enum số từ BE): 0..4
+const ESCROW_TYPE_LABELS = ["Deposit", "Lock", "Release", "Withdrawal", "Refund"]
 
 export const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -151,6 +153,7 @@ export const ProjectDetailPage: React.FC = () => {
         description: milestoneForm.description,
         dueDate: milestoneForm.dueDate,
         amount: milestoneForm.amount,
+        order: milestones.length + 1,
       })
       alert("Tạo Milestone mới thành công!")
       setActiveModal(null)
@@ -389,11 +392,11 @@ export const ProjectDetailPage: React.FC = () => {
                 <div key={tx.id} className="flex items-center justify-between text-xs bg-secondary/10 border border-border/40 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2">
                     <span className={`font-bold uppercase text-[10px] rounded px-1.5 py-0.5 border ${
-                      tx.typeName === "Deposit" || tx.typeName === "Release"
+                      tx.type === 0 || tx.type === 2
                         ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                         : "bg-amber-500/10 text-amber-600 border-amber-500/20"
                     }`}>
-                      {tx.typeName}
+                      {ESCROW_TYPE_LABELS[tx.type] ?? `#${tx.type}`}
                     </span>
                     <span className="text-muted-foreground">{new Date(tx.createdAt).toLocaleString("vi-VN")}</span>
                   </div>
@@ -581,7 +584,6 @@ export const ProjectDetailPage: React.FC = () => {
       {project.status === ProjectStatus.Closed && user && (isClient || isExpert) && (
         <ReviewSection
           projectId={project.id}
-          projectGuid={intToGuid(project.id)}
           currentUserId={Number(user.id)}
           counterpartId={isClient ? project.expertId : project.clientId}
           counterpartLabel={isClient ? "Expert" : "Client"}

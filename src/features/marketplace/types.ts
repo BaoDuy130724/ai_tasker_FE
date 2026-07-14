@@ -1,6 +1,9 @@
 export interface AiService {
   id: number
   expertId: number
+  // BE điền qua gRPC Profile (có thể là mặc định nếu Profile lỗi).
+  expertName?: string
+  expertAvatarUrl?: string | null
   categoryId: number
   categoryName?: string
   title: string
@@ -10,8 +13,9 @@ export interface AiService {
   coverImageUrl: string | null
   status: string // Draft | Published | Archived
   skills: string[]
-  rating: number
-  reviewsCount: number
+  // BE AiServiceDto dùng averageRating/totalReviews (KHÔNG phải rating/reviewsCount).
+  averageRating: number
+  totalReviews: number
   createdAt: string
   updatedAt: string | null
 }

@@ -5,9 +5,8 @@ import { createReview, createReply, getReviewsByProject } from "../api"
 import type { Review } from "../types"
 
 interface ReviewSectionProps {
-  /** Project.id (int) của BE Project service — sẽ tự map sang Guid mà Review service yêu cầu. */
+  /** Project.id (int) — Review service dùng đúng int này làm projectId (không map Guid). */
   projectId: number
-  projectGuid: string
   currentUserId: number
   /** userId của phía đối tác cần đánh giá (Client đánh giá Expert và ngược lại). */
   counterpartId: number
@@ -43,7 +42,6 @@ const StarRating: React.FC<{ value: number; onChange?: (v: number) => void; read
 
 export const ReviewSection: React.FC<ReviewSectionProps> = ({
   projectId,
-  projectGuid,
   currentUserId,
   counterpartId,
   counterpartLabel,
@@ -53,13 +51,13 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [replyDraft, setReplyDraft] = useState<Record<string, string>>({})
-  const [replyingId, setReplyingId] = useState<string | null>(null)
+  const [replyDraft, setReplyDraft] = useState<Record<number, string>>({})
+  const [replyingId, setReplyingId] = useState<number | null>(null)
 
   const fetchReviews = async () => {
     setIsLoading(true)
     try {
-      const data = await getReviewsByProject(projectGuid)
+      const data = await getReviewsByProject(projectId)
       setReviews(data)
     } catch (err) {
       console.error("Lỗi tải đánh giá dự án:", err)
@@ -71,7 +69,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
   useEffect(() => {
     fetchReviews()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectGuid])
+  }, [projectId])
 
   const myReview = reviews.find((r) => r.reviewerId === currentUserId)
   const formatDate = (dateStr: string) =>
@@ -83,7 +81,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
     setIsSubmitting(true)
     try {
       await createReview({
-        projectId: projectGuid,
+        projectId: projectId,
         reviewerId: currentUserId,
         revieweeId: counterpartId,
         rating,
@@ -100,7 +98,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
     }
   }
 
-  const handleSubmitReply = async (reviewId: string) => {
+  const handleSubmitReply = async (reviewId: number) => {
     const content = (replyDraft[reviewId] || "").trim()
     if (!content) return
     setIsSubmitting(true)

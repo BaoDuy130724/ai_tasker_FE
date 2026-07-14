@@ -81,7 +81,7 @@ export const FavoritesPage: React.FC = () => {
                   <span>Expert #{fav.service.expertId}</span>
                   <span className="flex items-center gap-0.5 text-amber-500 font-bold">
                     <Star className="h-3.5 w-3.5 fill-amber-500" />
-                    {fav.service.rating || "5.0"}
+                    {fav.service.averageRating || "5.0"}
                   </span>
                 </div>
                 <Link to={`/marketplace/services/${fav.serviceId}`} className="font-extrabold text-sm text-foreground hover:text-primary transition-all line-clamp-1 block">

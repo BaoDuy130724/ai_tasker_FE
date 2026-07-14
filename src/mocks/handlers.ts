@@ -37,7 +37,7 @@ const getMe = (): db.MockUserProfile => {
 
 /* ================================= JOB ================================== */
 const jobRoutes: MockRoute[] = [
-  route("get", "/", ({ query }) => {
+  route("get", "/jobs", ({ query }) => {
     let list = [...db.jobs]
     if (query.skill) list = list.filter((j) => j.skills.some((s) => s.toLowerCase().includes(String(query.skill).toLowerCase())))
     if (query.minBudget) list = list.filter((j) => j.budget >= Number(query.minBudget))
@@ -48,8 +48,8 @@ const jobRoutes: MockRoute[] = [
       : +new Date(b.createdAt) - +new Date(a.createdAt)))
     return apiResponse(paginate(list, query.page, query.pageSize))
   }),
-  route("get", "/:id", ({ params }) => apiResponse(db.jobs.find((j) => j.id === Number(params.id)) || null)),
-  route("post", "/", ({ body }) => {
+  route("get", "/jobs/:id", ({ params }) => apiResponse(db.jobs.find((j) => j.id === Number(params.id)) || null)),
+  route("post", "/jobs", ({ body }) => {
     const nj: db.MockJob = {
       id: Math.max(0, ...db.jobs.map((j) => j.id)) + 1,
       title: body.title, description: body.description, budget: Number(body.budget),
@@ -59,12 +59,12 @@ const jobRoutes: MockRoute[] = [
     db.jobs.unshift(nj)
     return apiResponse(nj, "Tạo job thành công")
   }),
-  route("put", "/:id/close", ({ params }) => {
+  route("put", "/jobs/:id/close", ({ params }) => {
     const j = db.jobs.find((x) => x.id === Number(params.id))
     if (j) { j.status = 1; j.statusName = "Closed"; j.updatedAt = nowISO() }
     return apiResponse(j || null, "Đã đóng job")
   }),
-  route("put", "/:id", ({ params, body }) => {
+  route("put", "/jobs/:id", ({ params, body }) => {
     const j = db.jobs.find((x) => x.id === Number(params.id))
     if (j) Object.assign(j, { ...body, budget: Number(body.budget), updatedAt: nowISO() })
     return apiResponse(j || null, "Cập nhật job thành công")
@@ -148,7 +148,7 @@ const projectRoutes: MockRoute[] = [
     const p = db.projects.find((x) => x.id === Number(body.projectId))
     const amount = Number(body.amount)
     if (p) { p.escrowTotalBalance += amount; p.escrowAvailableBalance += amount }
-    const tx: db.MockEscrowTx = { id: Date.now(), escrowAccountId: Number(body.projectId), type: 0, typeName: "Deposit", amount, status: 1, statusName: "Completed", idempotencyKey: body.idempotencyKey || newGuid(), createdAt: nowISO() }
+    const tx: db.MockEscrowTx = { id: Date.now(), escrowAccountId: Number(body.projectId), type: 0, amount, status: 1, note: "Nạp ký quỹ", createdAt: nowISO() }
     db.escrowTxns.unshift(tx)
     return apiResponse(tx, "Nạp ký quỹ thành công")
   }),
@@ -156,7 +156,7 @@ const projectRoutes: MockRoute[] = [
     const p = db.projects.find((x) => x.id === Number(body.projectId))
     const amount = Number(body.amount)
     if (p) { p.escrowTotalBalance = Math.max(0, p.escrowTotalBalance - amount); p.escrowAvailableBalance = Math.max(0, p.escrowAvailableBalance - amount) }
-    const tx: db.MockEscrowTx = { id: Date.now(), escrowAccountId: Number(body.projectId), type: 3, typeName: "Withdrawal", amount, status: 1, statusName: "Completed", idempotencyKey: body.idempotencyKey || newGuid(), createdAt: nowISO() }
+    const tx: db.MockEscrowTx = { id: Date.now(), escrowAccountId: Number(body.projectId), type: 3, amount, status: 1, note: "Rút tiền khả dụng", createdAt: nowISO() }
     db.escrowTxns.unshift(tx)
     return apiResponse(tx, "Rút ký quỹ thành công")
   }),
@@ -192,9 +192,9 @@ const marketplaceRoutes: MockRoute[] = [
     if (query.categoryId) list = list.filter((s) => s.categoryId === Number(query.categoryId))
     if (query.minPrice) list = list.filter((s) => s.price >= Number(query.minPrice))
     if (query.maxPrice) list = list.filter((s) => s.price <= Number(query.maxPrice))
-    if (query.minRating) list = list.filter((s) => s.rating >= Number(query.minRating))
+    if (query.minRating) list = list.filter((s) => s.averageRating >= Number(query.minRating))
     if (query.sortBy === "price") list.sort((a, b) => query.isDescending ? b.price - a.price : a.price - b.price)
-    else if (query.sortBy === "rating") list.sort((a, b) => b.rating - a.rating)
+    else if (query.sortBy === "rating") list.sort((a, b) => b.averageRating - a.averageRating)
     // getServices trả RAW PagedResult (không bọc ApiResponse)
     return paginate(list, Number(query.pageIndex) || 1, Number(query.pageSize) || 12)
   }),
@@ -206,7 +206,7 @@ const marketplaceRoutes: MockRoute[] = [
       categoryName: db.categories.find((c) => c.id === Number(body.categoryId))?.name,
       title: body.title, description: body.description, price: Number(body.price),
       deliveryTimeDays: Number(body.deliveryTimeDays), coverImageUrl: body.coverImageUrl || null,
-      status: "Published", skills: body.skills || [], rating: 0, reviewsCount: 0,
+      status: "Published", skills: body.skills || [], averageRating: 0, totalReviews: 0,
       createdAt: nowISO(), updatedAt: null,
     }
     db.services.unshift(ns)
@@ -239,7 +239,8 @@ const marketplaceRoutes: MockRoute[] = [
 const reviewRoutes: MockRoute[] = [
   route("post", "/reviews", ({ body }) => {
     const nr: db.MockReview = {
-      id: newGuid(), projectId: body.projectId, reviewerId: Number(body.reviewerId),
+      id: Math.max(0, ...db.reviews.map((r) => r.id)) + 1,
+      projectId: Number(body.projectId), reviewerId: Number(body.reviewerId),
       revieweeId: Number(body.revieweeId), rating: Number(body.rating),
       comment: body.comment ?? null, createdAt: nowISO(), reply: null,
     }
@@ -247,8 +248,8 @@ const reviewRoutes: MockRoute[] = [
     return apiResponse(nr, "Gửi đánh giá thành công")
   }),
   route("post", "/replies", ({ body }) => {
-    const reply = { id: newGuid(), reviewId: body.reviewId, replierId: Number(body.replierId), content: body.content, createdAt: nowISO() }
-    const r = db.reviews.find((x) => x.id === body.reviewId)
+    const reply = { id: Date.now(), replierId: Number(body.replierId), content: body.content, createdAt: nowISO() }
+    const r = db.reviews.find((x) => x.id === Number(body.reviewId))
     if (r) r.reply = reply
     return apiResponse(reply, "Đã phản hồi đánh giá")
   }),
@@ -261,7 +262,7 @@ const reviewRoutes: MockRoute[] = [
   route("get", "/reviews/user/:userId", ({ params }) =>
     apiResponse(db.reviews.filter((r) => r.revieweeId === Number(params.userId)))),
   route("get", "/reviews/project/:projectId", ({ params }) =>
-    apiResponse(db.reviews.filter((r) => r.projectId === params.projectId))),
+    apiResponse(db.reviews.filter((r) => r.projectId === Number(params.projectId)))),
 ]
 
 /* ============================ NOTIFICATION ============================ */
@@ -279,21 +280,24 @@ const notificationRoutes: MockRoute[] = [
 // Messaging trả RAW DTO (không bọc ApiResponse)
 const messagingRoutes: MockRoute[] = [
   route("post", "/Chat/sessions", ({ body }) => {
-    const existing = db.chatSessions.find((s) => s.clientId === body.clientId && s.expertId === body.expertId)
+    const clientId = Number(body.clientId), expertId = Number(body.expertId)
+    const existing = db.chatSessions.find((s) => s.clientId === clientId && s.expertId === expertId)
     if (existing) return existing
     const ns: db.MockChatSession = {
-      id: newGuid(), clientId: body.clientId, expertId: body.expertId,
-      jobId: body.jobId ?? null, createdAt: nowISO(), updatedAt: nowISO(), lastMessage: null,
+      id: Math.max(70000, ...db.chatSessions.map((s) => s.id)) + 1, clientId, expertId,
+      jobId: body.jobId != null ? Number(body.jobId) : null, createdAt: nowISO(), updatedAt: nowISO(), lastMessage: null,
     }
     db.chatSessions.unshift(ns)
     return ns
   }),
   route("get", "/Chat/sessions/user/:userId", ({ params }) => {
-    const mine = db.chatSessions.filter((s) => s.clientId === params.userId || s.expertId === params.userId)
+    const uid = Number(params.userId)
+    const mine = db.chatSessions.filter((s) => s.clientId === uid || s.expertId === uid)
     return mine.length ? mine : db.chatSessions // luôn có data để xem UI
   }),
   route("get", "/Chat/sessions/:sessionId/messages", ({ params }) => {
-    const msgs = db.chatMessages.filter((m) => m.sessionId === params.sessionId)
+    const sid = Number(params.sessionId)
+    const msgs = db.chatMessages.filter((m) => m.sessionId === sid)
     return msgs.length ? msgs : db.chatMessages.filter((m) => m.sessionId === db.chatSessions[0]?.id)
   }),
   route("put", "/Chat/sessions/:sessionId/read/:userId", () => ({ success: true })),
@@ -310,21 +314,21 @@ const profileRoutes: MockRoute[] = [
   }),
   route("post", "/Profiles/me/avatar", () => ({ avatarUrl: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`, message: "Cập nhật ảnh đại diện thành công" })),
   route("post", "/Profiles/me/portfolio", ({ body }) => {
-    const item = { id: newGuid(), title: body.title, description: body.description, link: body.link, imageUrl: body.imageUrl }
+    const item = { id: Date.now(), title: body.title, description: body.description, link: body.link, imageUrl: body.imageUrl }
     getMe().portfolioItems.push(item)
     return item
   }),
   route("delete", "/Profiles/me/portfolio/:id", ({ params }) => {
-    const me = getMe(); me.portfolioItems = me.portfolioItems.filter((p) => p.id !== params.id)
+    const me = getMe(); me.portfolioItems = me.portfolioItems.filter((p) => p.id !== Number(params.id))
     return { success: true }
   }),
   route("post", "/Profiles/me/skills/:skillId", ({ params }) => {
-    const sk = db.skills.find((s) => s.id === params.skillId)
+    const sk = db.skills.find((s) => s.id === Number(params.skillId))
     if (sk && !getMe().skills.some((x) => x.id === sk.id)) getMe().skills.push(sk)
     return { success: true }
   }),
   route("post", "/Profiles/me/certificates", ({ body }) => {
-    const cert = { id: newGuid(), name: body.name, fileUrl: body.fileUrl, issuedBy: body.issuedBy, issueDate: body.issueDate, status: "Pending" }
+    const cert = { id: Date.now(), name: body.name, fileUrl: body.fileUrl, issuedBy: body.issuedBy, issueDate: body.issueDate, status: "Pending" }
     getMe().certificates.push(cert)
     return cert
   }),
@@ -333,11 +337,11 @@ const profileRoutes: MockRoute[] = [
   // Admin certificate moderation (qua profile service)
   route("get", "/AdminCertificates", () => db.pendingCertificates),
   route("put", "/AdminCertificates/:id/approve", ({ params }) => {
-    removeWhere(db.pendingCertificates, (c) => c.id === params.id)
+    removeWhere(db.pendingCertificates, (c) => c.id === Number(params.id))
     return { success: true, message: "Đã duyệt chứng chỉ" }
   }),
   route("put", "/AdminCertificates/:id/reject", ({ params }) => {
-    removeWhere(db.pendingCertificates, (c) => c.id === params.id)
+    removeWhere(db.pendingCertificates, (c) => c.id === Number(params.id))
     return { success: true, message: "Đã từ chối chứng chỉ" }
   }),
 ]

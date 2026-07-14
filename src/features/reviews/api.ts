@@ -2,13 +2,11 @@ import { reviewApi } from "@/shared/api/client"
 import type { Review, ReviewReply, AverageRating } from "./types"
 import type { ApiResponse } from "@/features/jobs/api"
 
-export const intToGuid = (id: number): string => {
-  const hex = id.toString(16).padStart(12, "0")
-  return `00000000-0000-0000-0000-${hex}`
-}
+// Review service dùng ID kiểu int (đồng bộ với Project sau migration Guid→int 2026-07-14).
+// projectId chính là Project.Id (int) của Project service — KHÔNG map sang Guid nữa.
 
 export interface CreateReviewInput {
-  projectId: string // Guid
+  projectId: number
   reviewerId: number
   revieweeId: number
   rating: number
@@ -20,7 +18,7 @@ export const createReview = async (input: CreateReviewInput) => {
   return response.data?.data
 }
 
-export const getReviewsByProject = async (projectId: string) => {
+export const getReviewsByProject = async (projectId: number) => {
   const response = await reviewApi.get<ApiResponse<Review[]>>(`/reviews/project/${projectId}`)
   return response.data?.data || []
 }
@@ -36,7 +34,7 @@ export const getAverageRating = async (userId: number) => {
 }
 
 export interface CreateReplyInput {
-  reviewId: string // Guid
+  reviewId: number
   replierId: number
   content: string
 }

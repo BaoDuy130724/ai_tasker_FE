@@ -1,21 +1,13 @@
 import { messagingApi } from "@/shared/api/client"
 import type { ChatSession, ChatMessage } from "./types"
 
-export const intToGuid = (id: number): string => {
-  const hex = id.toString(16).padStart(12, "0")
-  return `00000000-0000-0000-0000-${hex}`
-}
-
-export const guidToInt = (guid: string): number => {
-  const parts = guid.split("-")
-  const hex = parts[parts.length - 1]
-  return parseInt(hex, 16)
-}
+// Messaging service trả DTO thuần (KHÔNG bọc ApiResponse) và dùng ID int.
+// clientId/expertId/senderId/sessionId đều là int (userId của Identity/Job).
 
 export interface CreateSessionInput {
-  clientId: string
-  expertId: string
-  jobId?: string | null
+  clientId: number
+  expertId: number
+  jobId?: number | null
 }
 
 export const getOrCreateSession = async (input: CreateSessionInput) => {
@@ -23,17 +15,17 @@ export const getOrCreateSession = async (input: CreateSessionInput) => {
   return response.data
 }
 
-export const getUserSessions = async (userId: string) => {
+export const getUserSessions = async (userId: number) => {
   const response = await messagingApi.get<ChatSession[]>(`/Chat/sessions/user/${userId}`)
   return response.data || []
 }
 
-export const getChatHistory = async (sessionId: string) => {
+export const getChatHistory = async (sessionId: number) => {
   const response = await messagingApi.get<ChatMessage[]>(`/Chat/sessions/${sessionId}/messages`)
   return response.data || []
 }
 
-export const markSessionAsRead = async (sessionId: string, userId: string) => {
+export const markSessionAsRead = async (sessionId: number, userId: number) => {
   const response = await messagingApi.put(`/Chat/sessions/${sessionId}/read/${userId}`)
   return response.data
 }

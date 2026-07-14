@@ -7,7 +7,7 @@ export interface AdminUser {
 }
 
 export interface Certificate {
-  id: string
+  id: number
   name: string
   fileUrl: string
   issuedBy: string

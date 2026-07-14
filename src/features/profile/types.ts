@@ -1,11 +1,14 @@
+// Profile service dùng ID kiểu int sau migration Guid→int (2026-07-14):
+// UserProfile/Skill/PortfolioItem/Certificate đều dùng int; route BE là {id:int}, {skillId:int}.
+
 export interface Skill {
-  id: string
+  id: number
   name: string
   category: string
 }
 
 export interface PortfolioItem {
-  id: string
+  id: number
   title: string
   description: string
   link: string
@@ -13,7 +16,7 @@ export interface PortfolioItem {
 }
 
 export interface Certificate {
-  id: string
+  id: number
   name: string
   fileUrl: string
   issuedBy: string
@@ -22,7 +25,7 @@ export interface Certificate {
 }
 
 export interface UserProfile {
-  id: string
+  id: number
   userId: number
   fullName: string
   title: string

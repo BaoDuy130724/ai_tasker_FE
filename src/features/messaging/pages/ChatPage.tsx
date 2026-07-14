@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
-import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead, intToGuid } from "../api"
+import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead } from "../api"
 import type { ChatSession, ChatMessage } from "../types"
 import * as signalR from "@microsoft/signalr"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ export const ChatPage: React.FC = () => {
   const [hubConnection, setHubConnection] = useState<signalR.HubConnection | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const myGuid = user ? intToGuid(Number(user.id)) : ""
+  const myId = user ? Number(user.id) : 0
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -33,24 +33,24 @@ export const ChatPage: React.FC = () => {
   const loadSessions = async () => {
     if (!user) return
     try {
-      const userGuid = intToGuid(Number(user.id))
-      let activeList = await getUserSessions(userGuid)
-      
+      const userId = Number(user.id)
+      let activeList = await getUserSessions(userId)
+
       // Nếu Client click "Chat" với Expert từ trang nào đó (truyền targetExpertId)
       if (targetExpertId && user.role === "Client") {
-        const expertGuid = intToGuid(Number(targetExpertId))
+        const expertId = Number(targetExpertId)
         // Check xem đã có session chưa
-        let existing = activeList.find(s => s.expertId === expertGuid && s.clientId === userGuid)
-        
+        let existing = activeList.find(s => s.expertId === expertId && s.clientId === userId)
+
         if (!existing) {
           // Tạo session mới
           existing = await getOrCreateSession({
-            clientId: userGuid,
-            expertId: expertGuid,
+            clientId: userId,
+            expertId: expertId,
             jobId: null,
           })
           // Reload lại list
-          activeList = await getUserSessions(userGuid)
+          activeList = await getUserSessions(userId)
         }
         
         if (existing) {
@@ -84,8 +84,8 @@ export const ChatPage: React.FC = () => {
     }
     fetchHistory()
 
-    if (activeSession && myGuid) {
-      markSessionAsRead(activeSession.id, myGuid).catch((err) =>
+    if (activeSession && myId) {
+      markSessionAsRead(activeSession.id, myId).catch((err) =>
         console.error("Lỗi đánh dấu đã đọc:", err)
       )
     }
@@ -138,7 +138,7 @@ export const ChatPage: React.FC = () => {
 
     const messageDto = {
       sessionId: activeSession.id,
-      senderId: myGuid,
+      senderId: myId,
       content: inputText.trim(),
     }
 
@@ -155,8 +155,7 @@ export const ChatPage: React.FC = () => {
   const getPartnerLabel = (session: ChatSession) => {
     const isClientRole = user?.role === "Client"
     const partnerId = isClientRole ? session.expertId : session.clientId
-    // Cắt bớt phần Guid dài
-    return `Đối tác #${partnerId.substring(partnerId.length - 6).toUpperCase()}`
+    return `Đối tác #${partnerId}`
   }
 
   return (
@@ -227,7 +226,7 @@ export const ChatPage: React.FC = () => {
             {/* Messages body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
               {messages.map((m) => {
-                const isMine = m.senderId.toLowerCase() === myGuid.toLowerCase()
+                const isMine = m.senderId === myId
                 return (
                   <div
                     key={m.id}

@@ -7,7 +7,7 @@
  *  ánh ngay trên UI trong phiên chạy.
  * ============================================================================
  */
-import { intToGuid, daysFromNow } from "./lib"
+import { daysFromNow } from "./lib"
 
 /* ------------------------------------------------------------------ */
 /*  Danh bạ người dùng (dùng chung cho tên/avatar xuyên suốt service)  */
@@ -179,18 +179,19 @@ export let milestones: MockMilestone[] = [
   { id: 812, projectId: 702, title: "M2 — Intent detection & tích hợp", description: "PhoBERT intent, tích hợp SDK app.", dueDate: daysFromNow(-16), amount: 16_500_000, status: 3, statusName: "Approved" },
 ]
 
-// EscrowTransaction (contracts-projects/api.ts): escrowAccountId == projectId để lọc theo projectId
+// EscrowTransaction (contracts-projects/api.ts): khớp BE EscrowTransactionDto
+// (type/status là enum số + note). escrowAccountId == projectId để lọc theo projectId.
 export interface MockEscrowTx {
-  id: number; escrowAccountId: number; type: number; typeName: string; amount: number
-  status: number; statusName: string; idempotencyKey: string; createdAt: string
+  id: number; escrowAccountId: number; type: number; amount: number
+  status: number; note: string | null; createdAt: string
 }
 export let escrowTxns: MockEscrowTx[] = [
-  { id: 9001, escrowAccountId: 701, type: 0, typeName: "Deposit", amount: 24_000_000, status: 1, statusName: "Completed", idempotencyKey: "seed-dep-701", createdAt: daysFromNow(-4) },
-  { id: 9002, escrowAccountId: 701, type: 1, typeName: "Lock", amount: 8_000_000, status: 1, statusName: "Completed", idempotencyKey: "seed-lock-701-1", createdAt: daysFromNow(-4) },
-  { id: 9003, escrowAccountId: 701, type: 2, typeName: "Release", amount: 8_000_000, status: 1, statusName: "Completed", idempotencyKey: "seed-rel-701-1", createdAt: daysFromNow(-1) },
-  { id: 9004, escrowAccountId: 701, type: 1, typeName: "Lock", amount: 8_000_000, status: 1, statusName: "Completed", idempotencyKey: "seed-lock-701-2", createdAt: daysFromNow(-1) },
-  { id: 9010, escrowAccountId: 702, type: 0, typeName: "Deposit", amount: 33_000_000, status: 1, statusName: "Completed", idempotencyKey: "seed-dep-702", createdAt: daysFromNow(-37) },
-  { id: 9011, escrowAccountId: 702, type: 2, typeName: "Release", amount: 33_000_000, status: 1, statusName: "Completed", idempotencyKey: "seed-rel-702", createdAt: daysFromNow(-14) },
+  { id: 9001, escrowAccountId: 701, type: 0, amount: 24_000_000, status: 1, note: "Nạp ký quỹ", createdAt: daysFromNow(-4) },
+  { id: 9002, escrowAccountId: 701, type: 1, amount: 8_000_000, status: 1, note: "Khoá cho milestone M1", createdAt: daysFromNow(-4) },
+  { id: 9003, escrowAccountId: 701, type: 2, amount: 8_000_000, status: 1, note: "Giải ngân milestone M1", createdAt: daysFromNow(-1) },
+  { id: 9004, escrowAccountId: 701, type: 1, amount: 8_000_000, status: 1, note: "Khoá cho milestone M2", createdAt: daysFromNow(-1) },
+  { id: 9010, escrowAccountId: 702, type: 0, amount: 33_000_000, status: 1, note: "Nạp ký quỹ", createdAt: daysFromNow(-37) },
+  { id: 9011, escrowAccountId: 702, type: 2, amount: 33_000_000, status: 1, note: "Giải ngân toàn bộ", createdAt: daysFromNow(-14) },
 ]
 
 // Dispute (contracts-projects/api.ts): status 0=Open,1=UnderReview,2=Resolved
@@ -205,12 +206,12 @@ export let disputes: MockDispute[] = [
 ]
 
 /* ========================== MARKETPLACE SERVICE ========================= */
-// AiService (marketplace/types.ts): dùng rating & reviewsCount (không phải averageRating)
+// AiService (marketplace/types.ts): BE dùng averageRating & totalReviews.
 export interface MockAiService {
   id: number; expertId: number; categoryId: number; categoryName?: string
   title: string; description: string; price: number; deliveryTimeDays: number
   coverImageUrl: string | null; status: string; skills: string[]
-  rating: number; reviewsCount: number; createdAt: string; updatedAt: string | null
+  averageRating: number; totalReviews: number; createdAt: string; updatedAt: string | null
 }
 const cover = (seed: string) => `https://picsum.photos/seed/${seed}/600/400`
 
@@ -224,14 +225,14 @@ export let categories: { id: number; name: string; description: string | null; p
 ]
 
 export let services: MockAiService[] = [
-  { id: 11, expertId: 2002, categoryId: 1, categoryName: "Chatbot & LLM", title: "Xây dựng Chatbot RAG doanh nghiệp", description: "Trợ lý AI truy vấn tài liệu nội bộ với trích dẫn nguồn, chống hallucination, tích hợp Slack/Web.", price: 12_000_000, deliveryTimeDays: 14, coverImageUrl: cover("rag"), status: "Published", skills: ["LLM / RAG", "Python", "NLP"], rating: 4.9, reviewsCount: 27, createdAt: daysFromNow(-20), updatedAt: daysFromNow(-3) },
-  { id: 12, expertId: 2001, categoryId: 1, categoryName: "Chatbot & LLM", title: "Fine-tune LLM cho lĩnh vực chuyên ngành", description: "LoRA/QLoRA fine-tuning, xây dataset, eval harness, tối ưu chi phí inference.", price: 18_000_000, deliveryTimeDays: 21, coverImageUrl: cover("finetune"), status: "Published", skills: ["Machine Learning", "PyTorch", "LLM / RAG"], rating: 4.8, reviewsCount: 19, createdAt: daysFromNow(-28), updatedAt: null },
-  { id: 13, expertId: 2003, categoryId: 2, categoryName: "Computer Vision", title: "Model nhận diện lỗi sản phẩm real-time", description: "Phát hiện lỗi bề mặt trên dây chuyền, tối ưu TensorRT chạy edge 30+ FPS.", price: 22_000_000, deliveryTimeDays: 25, coverImageUrl: cover("defect"), status: "Published", skills: ["Computer Vision", "PyTorch"], rating: 5.0, reviewsCount: 12, createdAt: daysFromNow(-15), updatedAt: null },
-  { id: 14, expertId: 2003, categoryId: 2, categoryName: "Computer Vision", title: "OCR trích xuất hoá đơn / chứng từ tiếng Việt", description: "Nhận dạng & bóc tách trường thông tin hoá đơn, độ chính xác > 95%.", price: 9_500_000, deliveryTimeDays: 12, coverImageUrl: cover("ocr"), status: "Published", skills: ["Computer Vision", "NLP"], rating: 4.7, reviewsCount: 33, createdAt: daysFromNow(-9), updatedAt: null },
-  { id: 15, expertId: 2004, categoryId: 3, categoryName: "Data & Analytics", title: "Dựng pipeline ETL + Data Warehouse", description: "Airflow + dbt + BigQuery, mô hình dimensional, kết nối Power BI/Looker.", price: 15_000_000, deliveryTimeDays: 18, coverImageUrl: cover("etl"), status: "Published", skills: ["Data Engineering", "Python"], rating: 4.6, reviewsCount: 21, createdAt: daysFromNow(-22), updatedAt: null },
-  { id: 16, expertId: 2004, categoryId: 6, categoryName: "Recommender", title: "Hệ gợi ý sản phẩm cá nhân hoá", description: "Recommender lai realtime với feature store, tối ưu CTR qua A/B test.", price: 20_000_000, deliveryTimeDays: 24, coverImageUrl: cover("recsys"), status: "Published", skills: ["Machine Learning", "Data Engineering"], rating: 4.8, reviewsCount: 8, createdAt: daysFromNow(-6), updatedAt: null },
-  { id: 17, expertId: 2001, categoryId: 4, categoryName: "NLP", title: "Phân loại & tóm tắt văn bản tiếng Việt", description: "Fine-tune PhoBERT phân loại ticket + tóm tắt hội thoại, tích hợp API.", price: 8_000_000, deliveryTimeDays: 10, coverImageUrl: cover("nlp"), status: "Published", skills: ["NLP", "Python"], rating: 4.9, reviewsCount: 41, createdAt: daysFromNow(-30), updatedAt: null },
-  { id: 18, expertId: 2002, categoryId: 5, categoryName: "MLOps", title: "Triển khai & vận hành mô hình (MLOps)", description: "CI/CD cho model, monitoring drift, autoscaling, giảm chi phí GPU.", price: 16_000_000, deliveryTimeDays: 20, coverImageUrl: cover("mlops"), status: "Draft", skills: ["DevOps / MLOps", "Python"], rating: 4.5, reviewsCount: 5, createdAt: daysFromNow(-2), updatedAt: null },
+  { id: 11, expertId: 2002, categoryId: 1, categoryName: "Chatbot & LLM", title: "Xây dựng Chatbot RAG doanh nghiệp", description: "Trợ lý AI truy vấn tài liệu nội bộ với trích dẫn nguồn, chống hallucination, tích hợp Slack/Web.", price: 12_000_000, deliveryTimeDays: 14, coverImageUrl: cover("rag"), status: "Published", skills: ["LLM / RAG", "Python", "NLP"], averageRating: 4.9, totalReviews: 27, createdAt: daysFromNow(-20), updatedAt: daysFromNow(-3) },
+  { id: 12, expertId: 2001, categoryId: 1, categoryName: "Chatbot & LLM", title: "Fine-tune LLM cho lĩnh vực chuyên ngành", description: "LoRA/QLoRA fine-tuning, xây dataset, eval harness, tối ưu chi phí inference.", price: 18_000_000, deliveryTimeDays: 21, coverImageUrl: cover("finetune"), status: "Published", skills: ["Machine Learning", "PyTorch", "LLM / RAG"], averageRating: 4.8, totalReviews: 19, createdAt: daysFromNow(-28), updatedAt: null },
+  { id: 13, expertId: 2003, categoryId: 2, categoryName: "Computer Vision", title: "Model nhận diện lỗi sản phẩm real-time", description: "Phát hiện lỗi bề mặt trên dây chuyền, tối ưu TensorRT chạy edge 30+ FPS.", price: 22_000_000, deliveryTimeDays: 25, coverImageUrl: cover("defect"), status: "Published", skills: ["Computer Vision", "PyTorch"], averageRating: 5.0, totalReviews: 12, createdAt: daysFromNow(-15), updatedAt: null },
+  { id: 14, expertId: 2003, categoryId: 2, categoryName: "Computer Vision", title: "OCR trích xuất hoá đơn / chứng từ tiếng Việt", description: "Nhận dạng & bóc tách trường thông tin hoá đơn, độ chính xác > 95%.", price: 9_500_000, deliveryTimeDays: 12, coverImageUrl: cover("ocr"), status: "Published", skills: ["Computer Vision", "NLP"], averageRating: 4.7, totalReviews: 33, createdAt: daysFromNow(-9), updatedAt: null },
+  { id: 15, expertId: 2004, categoryId: 3, categoryName: "Data & Analytics", title: "Dựng pipeline ETL + Data Warehouse", description: "Airflow + dbt + BigQuery, mô hình dimensional, kết nối Power BI/Looker.", price: 15_000_000, deliveryTimeDays: 18, coverImageUrl: cover("etl"), status: "Published", skills: ["Data Engineering", "Python"], averageRating: 4.6, totalReviews: 21, createdAt: daysFromNow(-22), updatedAt: null },
+  { id: 16, expertId: 2004, categoryId: 6, categoryName: "Recommender", title: "Hệ gợi ý sản phẩm cá nhân hoá", description: "Recommender lai realtime với feature store, tối ưu CTR qua A/B test.", price: 20_000_000, deliveryTimeDays: 24, coverImageUrl: cover("recsys"), status: "Published", skills: ["Machine Learning", "Data Engineering"], averageRating: 4.8, totalReviews: 8, createdAt: daysFromNow(-6), updatedAt: null },
+  { id: 17, expertId: 2001, categoryId: 4, categoryName: "NLP", title: "Phân loại & tóm tắt văn bản tiếng Việt", description: "Fine-tune PhoBERT phân loại ticket + tóm tắt hội thoại, tích hợp API.", price: 8_000_000, deliveryTimeDays: 10, coverImageUrl: cover("nlp"), status: "Published", skills: ["NLP", "Python"], averageRating: 4.9, totalReviews: 41, createdAt: daysFromNow(-30), updatedAt: null },
+  { id: 18, expertId: 2002, categoryId: 5, categoryName: "MLOps", title: "Triển khai & vận hành mô hình (MLOps)", description: "CI/CD cho model, monitoring drift, autoscaling, giảm chi phí GPU.", price: 16_000_000, deliveryTimeDays: 20, coverImageUrl: cover("mlops"), status: "Draft", skills: ["DevOps / MLOps", "Python"], averageRating: 4.5, totalReviews: 5, createdAt: daysFromNow(-2), updatedAt: null },
 ]
 
 // Favorite (marketplace/types.ts)
@@ -244,18 +245,19 @@ export let favorites: MockFavorite[] = [
 ]
 
 /* ============================= REVIEW SERVICE =========================== */
-// Review (reviews/types.ts): id & projectId là Guid string
+// Review (reviews/types.ts): id & projectId là int (đồng bộ Project sau migration Guid→int).
+// ReviewReplyDto của BE KHÔNG có reviewId (chỉ id/replierId/content/createdAt).
 export interface MockReview {
-  id: string; projectId: string; reviewerId: number; revieweeId: number
+  id: number; projectId: number; reviewerId: number; revieweeId: number
   rating: number; comment: string | null; createdAt: string
-  reply: { id: string; reviewId: string; replierId: number; content: string; createdAt: string } | null
+  reply: { id: number; replierId: number; content: string; createdAt: string } | null
 }
 export let reviews: MockReview[] = [
-  { id: intToGuid(1), projectId: intToGuid(702), reviewerId: 1002, revieweeId: 2002, rating: 5, comment: "Expert cực kỳ chuyên nghiệp, chatbot chạy mượt và đúng yêu cầu. Sẽ hợp tác tiếp!", createdAt: daysFromNow(-13), reply: { id: intToGuid(1001), reviewId: intToGuid(1), replierId: 2002, content: "Cảm ơn chị Hà rất nhiều, rất vui được đồng hành cùng dự án!", createdAt: daysFromNow(-12) } },
-  { id: intToGuid(2), projectId: intToGuid(650), reviewerId: 1001, revieweeId: 2003, rating: 5, comment: "Độ chính xác model vượt kỳ vọng, bàn giao đúng hạn.", createdAt: daysFromNow(-25), reply: null },
-  { id: intToGuid(3), projectId: intToGuid(651), reviewerId: 1003, revieweeId: 2004, rating: 4, comment: "Pipeline ổn định, tài liệu rõ ràng. Trừ 1 sao vì hơi trễ 2 ngày.", createdAt: daysFromNow(-30), reply: { id: intToGuid(1002), reviewId: intToGuid(3), replierId: 2004, content: "Cảm ơn anh đã góp ý, em sẽ cải thiện khâu ước lượng thời gian!", createdAt: daysFromNow(-29) } },
-  { id: intToGuid(4), projectId: intToGuid(652), reviewerId: 1002, revieweeId: 2001, rating: 5, comment: "Kiến thức sâu, tư vấn tận tình.", createdAt: daysFromNow(-40), reply: null },
-  { id: intToGuid(5), projectId: intToGuid(653), reviewerId: 1001, revieweeId: 2002, rating: 4, comment: "Kết quả tốt, giao tiếp nhanh.", createdAt: daysFromNow(-50), reply: null },
+  { id: 1, projectId: 702, reviewerId: 1002, revieweeId: 2002, rating: 5, comment: "Expert cực kỳ chuyên nghiệp, chatbot chạy mượt và đúng yêu cầu. Sẽ hợp tác tiếp!", createdAt: daysFromNow(-13), reply: { id: 1001, replierId: 2002, content: "Cảm ơn chị Hà rất nhiều, rất vui được đồng hành cùng dự án!", createdAt: daysFromNow(-12) } },
+  { id: 2, projectId: 650, reviewerId: 1001, revieweeId: 2003, rating: 5, comment: "Độ chính xác model vượt kỳ vọng, bàn giao đúng hạn.", createdAt: daysFromNow(-25), reply: null },
+  { id: 3, projectId: 651, reviewerId: 1003, revieweeId: 2004, rating: 4, comment: "Pipeline ổn định, tài liệu rõ ràng. Trừ 1 sao vì hơi trễ 2 ngày.", createdAt: daysFromNow(-30), reply: { id: 1002, replierId: 2004, content: "Cảm ơn anh đã góp ý, em sẽ cải thiện khâu ước lượng thời gian!", createdAt: daysFromNow(-29) } },
+  { id: 4, projectId: 652, reviewerId: 1002, revieweeId: 2001, rating: 5, comment: "Kiến thức sâu, tư vấn tận tình.", createdAt: daysFromNow(-40), reply: null },
+  { id: 5, projectId: 653, reviewerId: 1001, revieweeId: 2002, rating: 4, comment: "Kết quả tốt, giao tiếp nhanh.", createdAt: daysFromNow(-50), reply: null },
 ]
 
 /* ========================== NOTIFICATION SERVICE ======================= */
@@ -274,54 +276,54 @@ export const notificationSeed = (uid: number): MockNotification[] => [
 ]
 
 /* =========================== MESSAGING SERVICE ========================== */
-// ChatSession / ChatMessage (messaging/types.ts): id là Guid string, senderId Guid
+// ChatSession / ChatMessage (messaging/types.ts): id/senderId/clientId/expertId là int.
 export interface MockChatMessage {
-  id: string; sessionId: string; senderId: string; content: string
-  createdAt: string; fileUrl?: string | null; fileName?: string | null
+  id: number; sessionId: number; senderId: number; content: string
+  isRead: boolean; createdAt: string; attachments: any[]
 }
 export interface MockChatSession {
-  id: string; clientId: string; expertId: string; jobId: string | null
+  id: number; clientId: number; expertId: number; jobId: number | null
   createdAt: string; updatedAt: string; lastMessage: MockChatMessage | null
 }
 
-const sess1 = intToGuid(70001)
-const sess2 = intToGuid(70002)
+const sess1 = 70001
+const sess2 = 70002
 export let chatMessages: MockChatMessage[] = [
-  { id: intToGuid(80001), sessionId: sess1, senderId: intToGuid(1001), content: "Chào bạn, mình quan tâm tới đề xuất chatbot RAG của bạn.", createdAt: daysFromNow(-2) },
-  { id: intToGuid(80002), sessionId: sess1, senderId: intToGuid(2002), content: "Chào anh! Cảm ơn anh đã liên hệ. Anh cần chatbot xử lý bao nhiêu tài liệu ạ?", createdAt: daysFromNow(-1.9) },
-  { id: intToGuid(80003), sessionId: sess1, senderId: intToGuid(1001), content: "Khoảng 5000 trang PDF, cần có trích dẫn nguồn.", createdAt: daysFromNow(-1.8) },
-  { id: intToGuid(80004), sessionId: sess1, senderId: intToGuid(2002), content: "Hoàn toàn khả thi. Mình đề xuất Qdrant + hybrid search, mình gửi báo giá chi tiết nhé.", createdAt: daysFromNow(-1.7) },
-  { id: intToGuid(80010), sessionId: sess2, senderId: intToGuid(1002), content: "Bạn ơi model STT chạy tốt rồi, cảm ơn nhiều!", createdAt: daysFromNow(-14) },
-  { id: intToGuid(80011), sessionId: sess2, senderId: intToGuid(2002), content: "Dạ cảm ơn chị, có gì cần hỗ trợ chị cứ nhắn ạ.", createdAt: daysFromNow(-13.9) },
+  { id: 80001, sessionId: sess1, senderId: 1001, content: "Chào bạn, mình quan tâm tới đề xuất chatbot RAG của bạn.", isRead: true, createdAt: daysFromNow(-2), attachments: [] },
+  { id: 80002, sessionId: sess1, senderId: 2002, content: "Chào anh! Cảm ơn anh đã liên hệ. Anh cần chatbot xử lý bao nhiêu tài liệu ạ?", isRead: true, createdAt: daysFromNow(-1.9), attachments: [] },
+  { id: 80003, sessionId: sess1, senderId: 1001, content: "Khoảng 5000 trang PDF, cần có trích dẫn nguồn.", isRead: true, createdAt: daysFromNow(-1.8), attachments: [] },
+  { id: 80004, sessionId: sess1, senderId: 2002, content: "Hoàn toàn khả thi. Mình đề xuất Qdrant + hybrid search, mình gửi báo giá chi tiết nhé.", isRead: false, createdAt: daysFromNow(-1.7), attachments: [] },
+  { id: 80010, sessionId: sess2, senderId: 1002, content: "Bạn ơi model STT chạy tốt rồi, cảm ơn nhiều!", isRead: true, createdAt: daysFromNow(-14), attachments: [] },
+  { id: 80011, sessionId: sess2, senderId: 2002, content: "Dạ cảm ơn chị, có gì cần hỗ trợ chị cứ nhắn ạ.", isRead: true, createdAt: daysFromNow(-13.9), attachments: [] },
 ]
 export let chatSessions: MockChatSession[] = [
-  { id: sess1, clientId: intToGuid(1001), expertId: intToGuid(2002), jobId: intToGuid(1), createdAt: daysFromNow(-2), updatedAt: daysFromNow(-1.7), lastMessage: chatMessages[3] },
-  { id: sess2, clientId: intToGuid(1002), expertId: intToGuid(2002), jobId: intToGuid(5), createdAt: daysFromNow(-14), updatedAt: daysFromNow(-13.9), lastMessage: chatMessages[5] },
+  { id: sess1, clientId: 1001, expertId: 2002, jobId: 1, createdAt: daysFromNow(-2), updatedAt: daysFromNow(-1.7), lastMessage: chatMessages[3] },
+  { id: sess2, clientId: 1002, expertId: 2002, jobId: 5, createdAt: daysFromNow(-14), updatedAt: daysFromNow(-13.9), lastMessage: chatMessages[5] },
 ]
 
 /* ============================ PROFILE SERVICE =========================== */
-// Skill / PortfolioItem / Certificate / UserProfile (profile/types.ts): id là Guid
-export interface MockSkill { id: string; name: string; category: string }
+// Skill / PortfolioItem / Certificate / UserProfile (profile/types.ts): id là int.
+export interface MockSkill { id: number; name: string; category: string }
 export let skills: MockSkill[] = SKILL_POOL.map((name, i) => ({
-  id: intToGuid(3000 + i),
+  id: 3000 + i,
   name,
   category: ["Frontend", "Backend", "AI/ML"][i % 3],
 }))
 
 export interface MockCertificate {
-  id: string; name: string; fileUrl: string; issuedBy: string; issueDate: string; status: string
+  id: number; name: string; fileUrl: string; issuedBy: string; issueDate: string; status: string
 }
 export interface MockPortfolioItem {
-  id: string; title: string; description: string; link: string; imageUrl: string
+  id: number; title: string; description: string; link: string; imageUrl: string
 }
 export interface MockUserProfile {
-  id: string; userId: number; fullName: string; title: string; bio: string
+  id: number; userId: number; fullName: string; title: string; bio: string
   avatarUrl: string; role: string
   portfolioItems: MockPortfolioItem[]; skills: MockSkill[]; certificates: MockCertificate[]
 }
 
 export const buildProfile = (p: Person): MockUserProfile => ({
-  id: intToGuid(p.userId),
+  id: p.userId,
   userId: p.userId,
   fullName: p.fullName,
   title: p.title,
@@ -331,13 +333,13 @@ export const buildProfile = (p: Person): MockUserProfile => ({
   avatarUrl: p.avatar,
   role: p.role,
   portfolioItems: p.role === "Expert" ? [
-    { id: intToGuid(p.userId * 10 + 1), title: "Hệ thống RAG cho ngân hàng", description: "Chatbot tra cứu quy định nội bộ, giảm 60% thời gian tra cứu.", link: "https://example.com/case1", imageUrl: cover(`pf${p.userId}a`) },
-    { id: intToGuid(p.userId * 10 + 2), title: "Model dự báo nhu cầu kho vận", description: "Giảm 18% chi phí tồn kho cho chuỗi bán lẻ.", link: "https://example.com/case2", imageUrl: cover(`pf${p.userId}b`) },
+    { id: p.userId * 10 + 1, title: "Hệ thống RAG cho ngân hàng", description: "Chatbot tra cứu quy định nội bộ, giảm 60% thời gian tra cứu.", link: "https://example.com/case1", imageUrl: cover(`pf${p.userId}a`) },
+    { id: p.userId * 10 + 2, title: "Model dự báo nhu cầu kho vận", description: "Giảm 18% chi phí tồn kho cho chuỗi bán lẻ.", link: "https://example.com/case2", imageUrl: cover(`pf${p.userId}b`) },
   ] : [],
   skills: p.role === "Expert" ? skills.slice(0, 5) : [],
   certificates: p.role === "Expert" ? [
-    { id: intToGuid(p.userId * 100 + 1), name: "AWS Certified Machine Learning – Specialty", fileUrl: "https://picsum.photos/seed/cert1/400/300", issuedBy: "Amazon Web Services", issueDate: daysFromNow(-200), status: "Approved" },
-    { id: intToGuid(p.userId * 100 + 2), name: "TensorFlow Developer Certificate", fileUrl: "https://picsum.photos/seed/cert2/400/300", issuedBy: "Google", issueDate: daysFromNow(-120), status: "Approved" },
+    { id: p.userId * 100 + 1, name: "AWS Certified Machine Learning – Specialty", fileUrl: "https://picsum.photos/seed/cert1/400/300", issuedBy: "Amazon Web Services", issueDate: daysFromNow(-200), status: "Approved" },
+    { id: p.userId * 100 + 2, name: "TensorFlow Developer Certificate", fileUrl: "https://picsum.photos/seed/cert2/400/300", issuedBy: "Google", issueDate: daysFromNow(-120), status: "Approved" },
   ] : [],
 })
 
@@ -345,9 +347,9 @@ export const profileForUser = (userId: number): MockUserProfile => buildProfile(
 
 // Hàng đợi kiểm duyệt chứng chỉ (admin → profile service /AdminCertificates)
 export let pendingCertificates: MockCertificate[] = [
-  { id: intToGuid(41), name: "Azure AI Engineer Associate", fileUrl: "https://picsum.photos/seed/pc1/400/300", issuedBy: "Microsoft", issueDate: daysFromNow(-30), status: "Pending" },
-  { id: intToGuid(42), name: "Deep Learning Specialization", fileUrl: "https://picsum.photos/seed/pc2/400/300", issuedBy: "DeepLearning.AI", issueDate: daysFromNow(-45), status: "Pending" },
-  { id: intToGuid(43), name: "Professional Data Engineer", fileUrl: "https://picsum.photos/seed/pc3/400/300", issuedBy: "Google Cloud", issueDate: daysFromNow(-15), status: "Pending" },
+  { id: 41, name: "Azure AI Engineer Associate", fileUrl: "https://picsum.photos/seed/pc1/400/300", issuedBy: "Microsoft", issueDate: daysFromNow(-30), status: "Pending" },
+  { id: 42, name: "Deep Learning Specialization", fileUrl: "https://picsum.photos/seed/pc2/400/300", issuedBy: "DeepLearning.AI", issueDate: daysFromNow(-45), status: "Pending" },
+  { id: 43, name: "Professional Data Engineer", fileUrl: "https://picsum.photos/seed/pc3/400/300", issuedBy: "Google Cloud", issueDate: daysFromNow(-15), status: "Pending" },
 ]
 
 /* ============================= ADMIN SERVICE =========================== */

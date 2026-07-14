@@ -36,13 +36,15 @@ export const LoginPage: React.FC = () => {
     try {
       const response = await identityApi.post("/auth/login", data)
       const tokenData = response.data?.data || response.data
-      
-      const { userId, email, fullName, roles, accessToken, refreshToken } = tokenData
+
+      // BE trả AuthResultDto: { accessToken, refreshToken, accessTokenExpiresAt, user: { id, email, fullName, roles } }
+      // -> user nằm LỒNG trong `user`, id là `user.id` (không phải `userId` phẳng).
+      const { accessToken, refreshToken, user: authUser } = tokenData
       const user = {
-        id: userId,
-        email,
-        fullName,
-        role: roles && roles.length > 0 ? roles[0] : "Client"
+        id: authUser?.id,
+        email: authUser?.email,
+        fullName: authUser?.fullName,
+        role: authUser?.roles && authUser.roles.length > 0 ? authUser.roles[0] : "Client"
       }
       setAuth(user as any, accessToken, refreshToken)
       navigate(user.role === "Admin" ? "/admin/kpi" : "/dashboard")

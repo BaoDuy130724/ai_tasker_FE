@@ -12,15 +12,17 @@ export interface ProjectDetailResponse {
   milestones: Milestone[]
 }
 
+// BE EscrowTransactionDto trả type/status là enum số (Project API không cấu hình
+// JsonStringEnumConverter) + note; KHÔNG có typeName/statusName/idempotencyKey.
+// type: 0 Deposit, 1 Lock, 2 Release, 3 Withdrawal, 4 Refund
+// status: 0 Pending, 1 Completed, 2 Failed
 export interface EscrowTransaction {
   id: number
   escrowAccountId: number
   type: number
-  typeName: string
   amount: number
   status: number
-  statusName: string
-  idempotencyKey: string
+  note: string | null
   createdAt: string
 }
 
@@ -62,6 +64,8 @@ export interface CreateMilestoneInput {
   description: string
   dueDate: string
   amount: number
+  // BE CreateMilestoneCommand yêu cầu Order (thứ tự mốc trong project).
+  order: number
 }
 
 export const createMilestone = async (input: CreateMilestoneInput) => {
