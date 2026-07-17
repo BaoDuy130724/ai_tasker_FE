@@ -87,8 +87,9 @@ export const CreateAiServicePage: React.FC = () => {
       const response = await aiApi.post("/aiservices/service-description", {
         keywords: keywords,
       })
-      const data = response.data
-      setAiResult(data.serviceDescription || data)
+      // BE bọc ApiResponse: payload thật nằm trong .data (chuẩn 2026-07-17)
+      const data = response.data?.data
+      setAiResult(data?.serviceDescription || null)
     } catch (err: any) {
       console.error(err)
       setErrorMsg("Không thể kết nối đến dịch vụ AI. Hãy nhập mô tả thủ công hoặc thử lại sau.")

@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { useAuthStore } from "../store"
+import { useAuthStore, mapAuthUser } from "../store"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { identityApi } from "@/shared/api/client"
@@ -40,13 +40,8 @@ export const LoginPage: React.FC = () => {
       // BE trả AuthResultDto: { accessToken, refreshToken, accessTokenExpiresAt, user: { id, email, fullName, roles } }
       // -> user nằm LỒNG trong `user`, id là `user.id` (không phải `userId` phẳng).
       const { accessToken, refreshToken, user: authUser } = tokenData
-      const user = {
-        id: authUser?.id,
-        email: authUser?.email,
-        fullName: authUser?.fullName,
-        role: authUser?.roles && authUser.roles.length > 0 ? authUser.roles[0] : "Client"
-      }
-      setAuth(user as any, accessToken, refreshToken)
+      const user = mapAuthUser(authUser)
+      setAuth(user, accessToken, refreshToken)
       navigate(user.role === "Admin" ? "/admin/kpi" : "/dashboard")
     } catch (err: any) {
       console.error(err)

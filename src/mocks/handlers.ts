@@ -277,72 +277,77 @@ const notificationRoutes: MockRoute[] = [
 ]
 
 /* ============================= MESSAGING ============================= */
-// Messaging trả RAW DTO (không bọc ApiResponse)
+// Từ 2026-07-17: Messaging bọc ApiResponse<T> như mọi service (docs/API_RESPONSE_STANDARD.md).
 const messagingRoutes: MockRoute[] = [
   route("post", "/Chat/sessions", ({ body }) => {
     const clientId = Number(body.clientId), expertId = Number(body.expertId)
     const existing = db.chatSessions.find((s) => s.clientId === clientId && s.expertId === expertId)
-    if (existing) return existing
+    if (existing) return apiResponse(existing)
     const ns: db.MockChatSession = {
       id: Math.max(70000, ...db.chatSessions.map((s) => s.id)) + 1, clientId, expertId,
       jobId: body.jobId != null ? Number(body.jobId) : null, createdAt: nowISO(), updatedAt: nowISO(), lastMessage: null,
     }
     db.chatSessions.unshift(ns)
-    return ns
+    return apiResponse(ns)
   }),
   route("get", "/Chat/sessions/user/:userId", ({ params }) => {
     const uid = Number(params.userId)
     const mine = db.chatSessions.filter((s) => s.clientId === uid || s.expertId === uid)
-    return mine.length ? mine : db.chatSessions // luôn có data để xem UI
+    return apiResponse(mine.length ? mine : db.chatSessions) // luôn có data để xem UI
   }),
   route("get", "/Chat/sessions/:sessionId/messages", ({ params }) => {
     const sid = Number(params.sessionId)
     const msgs = db.chatMessages.filter((m) => m.sessionId === sid)
-    return msgs.length ? msgs : db.chatMessages.filter((m) => m.sessionId === db.chatSessions[0]?.id)
+    return apiResponse(msgs.length ? msgs : db.chatMessages.filter((m) => m.sessionId === db.chatSessions[0]?.id))
   }),
-  route("put", "/Chat/sessions/:sessionId/read/:userId", () => ({ success: true })),
+  // BE đổi 204 NoContent -> 200 + envelope (data: null)
+  route("put", "/Chat/sessions/:sessionId/read/:userId", () => apiResponse(null, "Đã đánh dấu đã đọc")),
 ]
 
 /* ============================== PROFILE ============================== */
-// Profile & Skills & AdminCertificates — RAW DTO (không bọc ApiResponse)
+// Từ 2026-07-17: Profile & Skills & AdminCertificates bọc ApiResponse<T>
+// (docs/API_RESPONSE_STANDARD.md); avatarUrl nằm trong data, message ở envelope.
 const profileRoutes: MockRoute[] = [
-  route("get", "/Profiles/me", () => getMe()),
+  route("get", "/Profiles/me", () => apiResponse(getMe())),
   route("put", "/Profiles/me", ({ body }) => {
     const me = getMe()
     Object.assign(me, { fullName: body.fullName, title: body.title, bio: body.bio })
-    return me
+    return apiResponse(null, "Cập nhật hồ sơ thành công")
   }),
-  route("post", "/Profiles/me/avatar", () => ({ avatarUrl: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`, message: "Cập nhật ảnh đại diện thành công" })),
+  route("post", "/Profiles/me/avatar", () => apiResponse(
+    { avatarUrl: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}` },
+    "Cập nhật ảnh đại diện thành công"
+  )),
   route("post", "/Profiles/me/portfolio", ({ body }) => {
     const item = { id: Date.now(), title: body.title, description: body.description, link: body.link, imageUrl: body.imageUrl }
     getMe().portfolioItems.push(item)
-    return item
+    return apiResponse(null, "Đã thêm portfolio")
   }),
   route("delete", "/Profiles/me/portfolio/:id", ({ params }) => {
     const me = getMe(); me.portfolioItems = me.portfolioItems.filter((p) => p.id !== Number(params.id))
-    return { success: true }
+    return apiResponse(null, "Đã xoá portfolio")
   }),
   route("post", "/Profiles/me/skills/:skillId", ({ params }) => {
     const sk = db.skills.find((s) => s.id === Number(params.skillId))
     if (sk && !getMe().skills.some((x) => x.id === sk.id)) getMe().skills.push(sk)
-    return { success: true }
+    return apiResponse(null, "Đã thêm kỹ năng")
   }),
   route("post", "/Profiles/me/certificates", ({ body }) => {
     const cert = { id: Date.now(), name: body.name, fileUrl: body.fileUrl, issuedBy: body.issuedBy, issueDate: body.issueDate, status: "Pending" }
     getMe().certificates.push(cert)
-    return cert
+    return apiResponse(null, "Đã gửi chứng chỉ, chờ duyệt")
   }),
-  route("get", "/Profiles/:userId", ({ params }) => db.profileForUser(Number(params.userId))),
-  route("get", "/Skills", () => db.skills),
+  route("get", "/Profiles/:userId", ({ params }) => apiResponse(db.profileForUser(Number(params.userId)))),
+  route("get", "/Skills", () => apiResponse(db.skills)),
   // Admin certificate moderation (qua profile service)
-  route("get", "/AdminCertificates", () => db.pendingCertificates),
+  route("get", "/AdminCertificates", () => apiResponse(db.pendingCertificates)),
   route("put", "/AdminCertificates/:id/approve", ({ params }) => {
     removeWhere(db.pendingCertificates, (c) => c.id === Number(params.id))
-    return { success: true, message: "Đã duyệt chứng chỉ" }
+    return apiResponse(null, "Đã duyệt chứng chỉ")
   }),
   route("put", "/AdminCertificates/:id/reject", ({ params }) => {
     removeWhere(db.pendingCertificates, (c) => c.id === Number(params.id))
-    return { success: true, message: "Đã từ chối chứng chỉ" }
+    return apiResponse(null, "Đã từ chối chứng chỉ")
   }),
 ]
 
@@ -383,11 +388,11 @@ const adminRoutes: MockRoute[] = [
 ]
 
 /* ================================= AI ================================= */
-// AI trả RAW DTO. FE đọc: data.jobDescription / data.serviceDescription / data.recommendedExperts
+// Từ 2026-07-17: AI bọc ApiResponse<T>. FE đọc: data.data.jobDescription / .serviceDescription / .recommendedExperts
 const aiRoutes: MockRoute[] = [
   route("post", "/aiservices/job-description", ({ body }) => {
     const kw = body.roughRequirements || "giải pháp AI"
-    return {
+    return apiResponse({
       generationId: newGuid(),
       title: `Tuyển chuyên gia: ${String(kw).slice(0, 60)}`,
       jobDescription: `## Mô tả công việc\n\nChúng tôi đang tìm kiếm một chuyên gia AI để thực hiện: ${kw}.\n\n**Phạm vi công việc:**\n- Phân tích yêu cầu & đề xuất kiến trúc giải pháp\n- Triển khai, kiểm thử và tối ưu mô hình\n- Bàn giao mã nguồn, tài liệu và hướng dẫn vận hành\n\n**Yêu cầu ứng viên:**\n- Kinh nghiệm thực chiến với các dự án AI/ML production\n- Giao tiếp tốt, bàn giao đúng tiến độ\n\n**Sản phẩm bàn giao:** mã nguồn, tài liệu kỹ thuật, buổi hướng dẫn chuyển giao.`,
@@ -398,11 +403,11 @@ const aiRoutes: MockRoute[] = [
       estimatedDuration: "3-5 tuần",
       isFromFallback: false,
       generatedAt: nowISO(),
-    }
+    })
   }),
   route("post", "/aiservices/service-description", ({ body }) => {
     const kw = body.keywords || "dịch vụ AI"
-    return {
+    return apiResponse({
       generationId: newGuid(),
       packageName: `Gói dịch vụ: ${String(kw).slice(0, 50)}`,
       serviceDescription: `## Giới thiệu gói dịch vụ\n\nTôi cung cấp giải pháp **${kw}** chất lượng cao, tối ưu cho doanh nghiệp.\n\n**Tính năng nổi bật:**\n- Triển khai nhanh, đúng chuẩn production\n- Tối ưu hiệu năng và chi phí vận hành\n- Hỗ trợ tích hợp và bảo hành sau bàn giao\n\n**Bạn sẽ nhận được:** mã nguồn, tài liệu, và hỗ trợ triển khai.`,
@@ -414,9 +419,9 @@ const aiRoutes: MockRoute[] = [
       tags: ["AI", "Machine Learning", "Automation"],
       isFromFallback: false,
       generatedAt: nowISO(),
-    }
+    })
   }),
-  route("post", "/aiservices/recommend-experts", () => ({
+  route("post", "/aiservices/recommend-experts", () => apiResponse({
     totalMatched: 3,
     searchStrategy: "vector-search",
     recommendedExperts: [2002, 2001, 2003].map((id, i) => {

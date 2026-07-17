@@ -76,9 +76,10 @@ export const CreateJobPage: React.FC = () => {
       const response = await aiApi.post("/aiservices/job-description", {
         roughRequirements: roughReqs,
       })
-      const data = response.data
-      setAiResult(data.jobDescription || data)
-      setIsFromFallback(data.isFromFallback || false)
+      // BE bọc ApiResponse: payload thật nằm trong .data (chuẩn 2026-07-17)
+      const data = response.data?.data
+      setAiResult(data?.jobDescription || null)
+      setIsFromFallback(data?.isFromFallback || false)
     } catch (err: any) {
       console.error(err)
       setErrorMsg("Không thể kết nối đến dịch vụ AI. Hãy nhập mô tả thủ công hoặc thử lại sau.")

@@ -1,6 +1,6 @@
 import axios from "axios"
 import type { AxiosInstance } from "axios"
-import { useAuthStore } from "@/features/auth/store"
+import { useAuthStore, mapAuthUser } from "@/features/auth/store"
 // [MOCK] Lớp dữ liệu giả — xoá 3 dòng import + block "[MOCK]" bên dưới để gỡ hoàn toàn.
 import { MOCK_ENABLED, attachMock, seedLocalMocks } from "@/mocks"
 
@@ -41,6 +41,53 @@ const getBaseUrl = (service: string, useGateway: boolean) => {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Refresh phiên đăng nhập — SINGLE-FLIGHT.
+// BE xoay vòng refresh token (revoke cũ ngay khi dùng — RefreshHandler), nên tuyệt
+// đối không gọi /auth/refresh song song: request thứ hai sẽ dùng token đã revoke
+// và văng đăng nhập. Mọi lời gọi trong lúc đang refresh đều chờ chung 1 promise.
+// ---------------------------------------------------------------------------
+let refreshInFlight: Promise<string> | null = null
+
+export const refreshSession = (): Promise<string> => {
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null
+    })
+  }
+  return refreshInFlight
+}
+
+const doRefresh = async (): Promise<string> => {
+  const refreshToken = useAuthStore.getState().refreshToken
+  if (!refreshToken) {
+    useAuthStore.getState().clearAuth()
+    throw new Error("Không có refresh token")
+  }
+
+  const useGateway = import.meta.env.VITE_USE_GATEWAY === "true"
+  const identityUrl = getBaseUrl("identity", useGateway)
+  const refreshBaseUrl = useGateway ? identityUrl : `${identityUrl}/api`
+
+  try {
+    // BE (RefreshCommand) chỉ cần refreshToken — không gửi accessToken cũ.
+    const refreshRes = await axios.post(`${refreshBaseUrl}/auth/refresh`, {
+      refreshToken,
+    })
+
+    // Response bọc chuẩn ApiResponse<AuthResultDto>
+    const tokenData = refreshRes.data?.data || refreshRes.data
+    const { accessToken, refreshToken: newRefreshToken, user } = tokenData
+
+    useAuthStore.getState().setAuth(mapAuthUser(user), accessToken, newRefreshToken)
+    return accessToken
+  } catch (err) {
+    // Refresh token hết hạn / bị revoke → coi như phiên kết thúc.
+    useAuthStore.getState().clearAuth()
+    throw err
+  }
+}
+
 const createServiceInstance = (service: string): AxiosInstance => {
   const useGateway = import.meta.env.VITE_USE_GATEWAY === "true"
   const base = getBaseUrl(service, useGateway)
@@ -71,42 +118,26 @@ const createServiceInstance = (service: string): AxiosInstance => {
     attachMock(instance, service)
   }
 
-  // Response Interceptor: Xử lý 401 & Refresh Token
+  // Response Interceptor: Xử lý 401 & Refresh Token (single-flight — xem refreshSession)
   instance.interceptors.response.use(
     (response) => response,
     async (error) => {
       const originalRequest = error.config
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
         originalRequest._retry = true
+
+        if (!useAuthStore.getState().refreshToken) {
+          useAuthStore.getState().clearAuth()
+          return Promise.reject(error)
+        }
+
         try {
-          const accessToken = useAuthStore.getState().accessToken
-          const refreshToken = useAuthStore.getState().refreshToken
-          
-          if (!refreshToken || !accessToken) {
-            useAuthStore.getState().clearAuth()
-            return Promise.reject(error)
-          }
-
-          const identityUrl = getBaseUrl("identity", useGateway)
-          const refreshBaseUrl = isDirect ? `${identityUrl}/api` : identityUrl
-          
-          const refreshRes = await axios.post(`${refreshBaseUrl}/auth/refresh`, {
-            accessToken,
-            refreshToken,
-          })
-
-          // Giả định response trả về chứa data bọc theo chuẩn: ApiResponse<TokenDto>
-          const tokenData = refreshRes.data?.data || refreshRes.data
-          const { accessToken: newAccessToken, refreshToken: newRefreshToken, user } = tokenData
-          
-          useAuthStore.getState().setAuth(user, newAccessToken, newRefreshToken)
-
+          const newAccessToken = await refreshSession()
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
           }
           return axios(originalRequest)
         } catch (refreshError) {
-          useAuthStore.getState().clearAuth()
           return Promise.reject(refreshError)
         }
       }
@@ -128,3 +159,19 @@ export const messagingApi = createServiceInstance("messaging")
 export const aiApi = createServiceInstance("ai")
 export const fileApi = createServiceInstance("file")
 export const adminApi = createServiceInstance("admin")
+
+// ---------------------------------------------------------------------------
+// Bootstrap khôi phục phiên sau F5.
+// accessToken chỉ sống trong memory (không persist — xem features/auth/store.ts),
+// nên khi tải lại trang phải đổi refreshToken (persist) lấy accessToken mới.
+// Chạy ở module scope để kịp trước mọi effect của component; nếu refresh fail
+// thì doRefresh đã clearAuth → ProtectedRoute tự đưa user về /login.
+// ---------------------------------------------------------------------------
+{
+  const { accessToken, refreshToken } = useAuthStore.getState()
+  if (!accessToken && refreshToken) {
+    refreshSession().catch(() => {
+      /* phiên hết hạn — đã clearAuth trong doRefresh */
+    })
+  }
+}

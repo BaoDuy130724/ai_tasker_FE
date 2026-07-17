@@ -7,7 +7,18 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-  const { accessToken, user } = useAuthStore()
+  const { accessToken, refreshToken, user } = useAuthStore()
+
+  // Sau F5: accessToken (chỉ ở memory) chưa có, nhưng còn refreshToken + user
+  // -> bootstrap trong shared/api/client.ts đang gọi /auth/refresh. Chờ, đừng đá về /login.
+  // Refresh xong: setAuth -> render tiếp; fail: clearAuth -> user = null -> redirect bên dưới.
+  if (!accessToken && refreshToken && user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Đang khôi phục phiên đăng nhập...
+      </div>
+    )
+  }
 
   if (!accessToken || !user) {
     // Chưa đăng nhập -> redirect về login

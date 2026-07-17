@@ -112,8 +112,8 @@ Theo `DEMO_READINESS.md` / báo cáo trước:
 ### Phase 1 — Auth (Login / Register) [✅ HOÀN THÀNH]
 - ✅ Screens: `LoginPage`, `RegisterPage` với thiết kế split-screen cao cấp (Bảng màu Slate + Violet tinh tế), hỗ trợ chọn role bằng UI card grid trực quan.
 - ✅ Validation client-side với Zod + React Hook Form, xử lý lỗi API và hiển thị Alert.
-- ✅ Lưu token vào Zustand store + tự động khôi phục (persist) trong `localStorage`.
-- ✅ Interceptor tự động gửi token và cơ chế refresh token thông minh theo schema Backend.
+- ✅ Auth state trong Zustand store: `localStorage` chỉ persist `user` + `refreshToken`; **`accessToken` chỉ sống trong memory** (giảm bề mặt XSS), F5 tự khôi phục qua `POST /auth/refresh` (bootstrap trong `shared/api/client.ts`, single-flight vì BE xoay vòng refresh token).
+- ✅ Interceptor tự động gửi token; gặp 401 thì refresh (gộp single-flight) rồi retry request gốc.
 - **Acceptance**: ✅ Đăng ký → đăng nhập → token lưu giữ, phân quyền theo role hoạt động hoàn hảo, F5 giữ phiên.
 
 ### Phase 2 — Shell chính & Dashboard rỗng theo role [✅ HOÀN THÀNH]

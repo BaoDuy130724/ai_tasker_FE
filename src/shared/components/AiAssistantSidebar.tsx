@@ -63,7 +63,8 @@ export const AiAssistantSidebar: React.FC<{ onClose: () => void }> = ({ onClose 
             const response = await aiApi.post("/aiservices/recommend-experts", {
               jobDescription: jobData.description,
             })
-            const data = response.data
+            // BE bọc ApiResponse: payload thật nằm trong .data (chuẩn 2026-07-17)
+            const data = response.data?.data
             
             if (data?.recommendedExperts && data.recommendedExperts.length > 0) {
               setMessages((prev) => [

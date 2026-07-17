@@ -73,17 +73,19 @@ export const removeAdminService = async (id: number, reason: string) => {
 }
 
 // Certificate APIs (gọi qua profile service!)
+// Từ 2026-07-17: AdminCertificatesController bọc ApiResponse<T> + yêu cầu JWT role Admin
+// ([Authorize(Roles = "Admin")]) — token của user thường sẽ bị 403.
 export const getPendingCertificates = async () => {
-  const response = await profileApi.get<Certificate[]>("/AdminCertificates")
-  return response.data || []
+  const response = await profileApi.get<ApiResponse<Certificate[]>>("/AdminCertificates")
+  return response.data?.data || []
 }
 
 export const approveCertificate = async (id: number) => {
-  const response = await profileApi.put<any>(`/AdminCertificates/${id}/approve`)
+  const response = await profileApi.put<ApiResponse<null>>(`/AdminCertificates/${id}/approve`)
   return response.data
 }
 
 export const rejectCertificate = async (id: number) => {
-  const response = await profileApi.put<any>(`/AdminCertificates/${id}/reject`)
+  const response = await profileApi.put<ApiResponse<null>>(`/AdminCertificates/${id}/reject`)
   return response.data
 }
