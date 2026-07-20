@@ -10,6 +10,12 @@ const getBaseUrl = (service: string, useGateway: boolean) => {
   const gatewayUrl = import.meta.env.VITE_API_GATEWAY_URL || "http://localhost:5088"
   
   if (useGateway && service !== "file") {
+    // Gateway `admin-route` KHÔNG có transform PathRemovePrefix (forward nguyên path
+    // `/api/admin/**` xuống Admin service) — khác 9 route còn lại. Các path trong
+    // features/admin/api.ts đã bắt đầu bằng "/admin/..." nên KHÔNG được ghép thêm
+    // segment "admin" vào base, nếu không URL thành /api/admin/admin/* → 404.
+    // (Verify live 2026-07-20: /api/admin/users → 200, /api/admin/admin/users → 404.)
+    if (service === "admin") return `${gatewayUrl}/api`
     return `${gatewayUrl}/api/${service}`
   } else {
     switch (service) {

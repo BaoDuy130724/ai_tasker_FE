@@ -15,9 +15,10 @@
 
 ## 0. TL;DR — điều quan trọng nhất
 
-1. 🔴 **FE hiện KHÔNG chạm BE thật.** `.env` đang `VITE_USE_MOCK=true` → mọi service (trừ identity)
-   chạy trên mock trong `src/mocks/`. **Mọi mục "✅ HOÀN THÀNH" ở plan cũ đều verify trên MOCK, chưa phải
-   BE mới.** Việc số 1 là tắt mock rồi verify lại từng feature với BE mới.
+1. ✅ **Mock đã tắt & verify live ĐÃ CHẠY (2026-07-20 chiều).** Kết quả: **FE khớp BE mới gần như
+   toàn bộ** (auth/job/proposal/escrow/dispute/marketplace/review/notification/admin ✅ — xem mục 5);
+   tìm được **1 bug FE** (admin baseURL qua Gateway — đã sửa, P2-1) và **1 chùm bug BE mới quanh
+   escrow/milestone** (thiếu Lock → duyệt milestone luôn 500 — mục 4b, chờ BE sửa).
 2. 🔴 **BE 2026-07-20 đã siết auth cho Project & Job** (trước đây ẩn danh rút được escrow, duyệt được
    milestone, tự khai `ClientId`). FE phải: bỏ `clientId` khỏi body Job, và đảm bảo mọi call Project
    đều kèm token + đúng vai trò (Client/Expert/Admin).
@@ -69,7 +70,7 @@
 
 ### P0 — Nối FE vào BE mới (blocker: hiện đang mock)
 
-**P0-1. Tắt mock & verify live.** *(✅ code 2026-07-20 — mock đã tắt; ⏳ verify live cần BE chạy)*
+**P0-1. Tắt mock & verify live.** *(✅ code 2026-07-20 — mock đã tắt; ✅ verify live đã chạy 2026-07-20 chiều — kết quả ở mục 5, phát hiện BE mới ở mục 4b)*
 - ✅ `.env`: `VITE_USE_MOCK=true` → `false`.
 - Đây là **master task**: mọi mục P1/P2 chỉ test được thật sau khi tắt mock.
 - Chạy BE: mở `ai-tasker/AITasker.slnx`, profile **"3 - All services (trừ Messaging)"** + RabbitMQ Docker
@@ -110,7 +111,15 @@ tạo Admin bằng sửa `UserRoles.Role=3` trực tiếp DB Identity.
 
 ### P2 — gRPC đã bật + dọn dẹp
 
-**P2-1. Admin — dọn comment stale + re-verify live** *(✅ comment đã dọn 2026-07-20; ⏳ verify live)*
+**P2-1. Admin — dọn comment stale + re-verify live** *(✅ comment đã dọn 2026-07-20; ✅ verify live 2026-07-20 — kèm 1 fix FE)*
+- 🔧 **Đã sửa bug FE (client.ts):** Gateway `admin-route` là route DUY NHẤT **không có transform**
+  `PathRemovePrefix` (forward nguyên path `/api/admin/**`). FE cũ build base `/api/admin` + path
+  `/admin/users` → `/api/admin/admin/users` → **404 toàn bộ màn Admin qua Gateway**. Fix: gateway mode
+  của service `admin` dùng base `${gateway}/api` (không ghép segment). Verify: `/api/admin/users` 200,
+  dạng cũ 404. Direct mode không đổi.
+- ✅ Verify live toàn bộ: dashboard KPI (+refresh 1 call→3 gRPC, KPI cập nhật thật), users (gRPC
+  Identity), jobs (gRPC Job), services (gRPC Marketplace), lock/unlock user (login bị chặn 403 thật),
+  token Client vào admin API → 403 đúng.
 - ✅ `features/admin/api.ts`: comment "gRPC chưa bật → sẽ lỗi runtime" đã thay bằng trạng thái thật
   (gRPC ✅ bật, port 5104/5254, lưu ý GetJobs BE bỏ qua `keyword`).
 - Re-verify live: `getDashboardKpi` + `refreshDashboardKpi` (BE: 1 call → 3 gRPC), `getAdminJobs`/`removeAdminJob`,
@@ -140,26 +149,69 @@ cần token Admin (BE mục 12) — FE đã note đúng.
 - **Notification realtime**: SignalR `/hubs/notification` OK; Job publisher event vẫn ⏳ ở BE → job created/closed
   có thể chưa bắn notification. UI nên chịu được "chưa nhận được" (fallback list, không phụ thuộc 100% realtime).
 
+## 4b. Phát hiện MỚI khi verify live 2026-07-20 (đều là BE/môi trường — FE chỉ ghi nhận)
+
+> Test bằng HTTP qua Gateway với đúng payload FE (3 user thật: Client id=1, Expert id=2, Admin id=3).
+> FE **không** sửa gì trong `ai-tasker/` — mọi mục dưới đây chờ đội BE.
+
+1. 🔴 **Escrow thiếu bước Lock → duyệt milestone LUÔN 500.** Doc trên `EscrowAccount` ghi luồng
+   *"Deposit → tiền bị Lock khi tạo milestone → Release khi Approve"*, nhưng **không code path nào gọi
+   `EscrowAccount.Lock()`** (chỉ Deposit/Withdraw có command; grep toàn service chỉ thấy `Lock` trong
+   unit test). Hệ quả: `ApproveMilestone` gọi `Release` khi `LockedBalance=0` →
+   `InvalidOperationException: "Locked balance is less than release amount"` → 500. Fix đề xuất:
+   Lock `milestone.Amount` trong `CreateMilestoneCommandHandler` (+ ghi EscrowTransaction type Lock).
+   FE tạm thời: nút duyệt milestone sẽ báo lỗi chung — không phải bug FE.
+2. 🔴 **Project state-machine kẹt ở `Created` → request-revision không dùng được.**
+   `Project.RequestRevision()` throw khi status = `Created`, nhưng không bước nào trong luồng chuẩn
+   (approve proposal → deposit → milestone → deliverable) chuyển Project sang trạng thái làm việc.
+   Test live: request-revision → 500 *"Cannot request revision when status is 'Created'"*.
+3. 🟠 **Domain exception → 500 thay vì 4xx**: rút quá số dư, deliver lại milestone đã Delivered,
+   request-revision sai trạng thái... đều là `InvalidOperationException` không được map trong
+   `ExceptionHandlingMiddleware` → FE chỉ hiện "unexpected error". Đề xuất: map về 422 như
+   `BusinessRuleException`.
+4. 🟠 **Xác nhận live gap 15.7 (`ApproveProposal`)**: Expert tự approve proposal của mình được (200) —
+   contract tạo ra với clientId = chính expert. BE chưa verify người duyệt sở hữu job.
+5. 🟡 **Review không kiểm tra trạng thái Project**: review 2 chiều + reply thành công khi Project chưa
+   Closed; `reviewerId`/`replierId` vẫn tự khai trong body (Review đã validate JWT nhưng chưa dùng
+   claim thay body).
+6. 🟡 **Môi trường máy dev này (không phải lỗi code):**
+   - Instance `localhost\SQLEXPRESS` **chết** (data root trỏ ổ `E:` không còn) → 4 service
+     (Profile/Review/Marketplace/Notification) không kết nối được DB nếu chạy đúng `appsettings.json`.
+   - DB `AITasker_Identity_dev` trên máy là schema ASP.NET Identity cũ (tháng 5) → Identity migrate fail
+     lúc khởi động.
+   - Workaround KHÔNG sửa file (đã dùng cho phiên verify): chạy service với env var override, ví dụ
+     `$env:ConnectionStrings__DefaultConnection='Server=localhost;Database=AITasker_Identity_dev2;User Id=sa;Password=12345;Encrypt=True;TrustServerCertificate=True'`
+     rồi `dotnet run --launch-profile http`. Dữ liệu test nằm ở `AITasker_Identity_dev2` + các
+     `AITasker_*_dev` trên instance `localhost`.
+   - `start-all.bat` không ổn định trên máy này (cửa sổ con không bind port); khởi động tay từng
+     service hoặc bằng script PowerShell thì ổn.
+7. ℹ️ **AI chạy bằng fallback** (`isFromFallback=true`) vì Gemini key đã gỡ sang user-secrets và chưa
+   set lại (BE mục 15.4) — muốn AI thật: `dotnet user-secrets set "OpenAI:ApiKey" ...`.
+8. ℹ️ **Tạo Admin trên DB mới**: cột `UserRoles.Role` là **chuỗi** (`'Client'/'Expert'/'Admin'`), không
+   phải số 3 như BE mục 15.5 ghi — lệnh đúng: `UPDATE UserRoles SET Role='Admin' WHERE UserId=...`.
+
 ---
 
 ## 5. Checklist verify live (điền khi tắt mock + chạy BE mới)
 
-> Chạy sau P0-1. Đánh dấu ✅/❌ + ghi lỗi thật. Đây thay cho các "✅" cũ vốn chỉ đúng trên mock.
+> ✅ **Đã chạy 2026-07-20 (chiều)** — test API-level qua Gateway (`http://localhost:5088`) với đúng
+> payload/URL FE tạo ra, 3 user thật (Client/Expert/Admin). Chưa gồm click-through browser & SignalR
+> realtime (cần test tay trên `localhost:5173`). Chi tiết lỗi BE: **mục 4b**.
 
 | Feature | Luồng test | Kết quả |
 | :--- | :--- | :--- |
-| Auth | Register (Client/Expert) → Login → F5 giữ phiên → Logout | ⬜ |
-| Job | Client tạo job (không gửi clientId) → sửa → đóng; Expert/Public xem list + filter | ⬜ |
-| Proposal | Expert nộp proposal → Client duyệt → tạo Contract+Project | ⬜ |
-| Project/Milestone | Client tạo milestone; Expert nộp deliverable; Client duyệt (giải ngân) / request revision | ⬜ |
-| Escrow | Client deposit; Expert withdraw; xem transaction history; **sai vai trò → 403** | ⬜ |
-| Dispute | Client/Expert mở dispute; Admin resolve | ⬜ |
-| Marketplace | Expert tạo/publish AiService; browse/filter; favorite | ⬜ |
-| Review | Sau Project Closed: review 2 chiều + reply | ⬜ |
-| Notification | SignalR badge realtime; list; mark-read | ⬜ |
-| Messaging | Chat realtime `/chathub` (int IDs) | ⬜ |
-| AI | Sinh mô tả job/service; recommend expert | ⬜ |
-| Admin | Dashboard KPI (+refresh gRPC); lock user; remove job/service; duyệt certificate | ⬜ |
+| Auth | Register (Client/Expert) → Login → refresh (F5 giữ phiên) → chặn role Admin | ✅ register/login/refresh-rotation OK; register `Admin` → 400 đúng; user shape khớp `mapAuthUser` |
+| Job | Client tạo job (không gửi clientId) → sửa → đóng; Expert/Public xem list + filter | ✅ toàn bộ; anon POST → 401, Expert sửa job người khác → 403; `clientId` suy từ token; status số + statusName khớp FE |
+| Proposal | Expert nộp proposal → Client duyệt → tạo Contract+Project | ✅ submit/by-job/my-proposals/approve → Contract+Project đúng shape; ⚠️ gap 15.7 xác nhận live (mục 4b.4) |
+| Project/Milestone | Client tạo milestone; Expert nộp deliverable; Client duyệt (giải ngân) / request revision | ⚠️ tạo milestone + deliverable ✅ (`ProjectDetailsDto`/`MilestoneDetailsDto` khớp FE 100%); ❌ **duyệt → 500** (BE thiếu Lock — mục 4b.1); ❌ **request-revision → 500** (BE state machine — mục 4b.2) |
+| Escrow | Client deposit; Expert withdraw; xem transaction history; **sai vai trò → 403** | ✅ deposit/withdraw/transactions (shape khớp `EscrowTransaction` FE); Expert deposit → 403, Client withdraw → 403, anon → 401 ✅; ⚠️ rút quá số dư → 500 thay vì 4xx (mục 4b.3) |
+| Dispute | Client/Expert mở dispute; Admin resolve | ✅ open/list/resolve; Expert resolve → 403 đúng; `DisputeDto` khớp FE (có `createdAt`, không `statusName`) |
+| Marketplace | Expert tạo/publish AiService; browse/filter; favorite | ✅ 4 category seed sẵn; create → Published; browse paged `{items,totalCount}`; favorite add/list OK |
+| Review | Sau Project Closed: review 2 chiều + reply | ✅ create/list-by-project/reply/average-rating OK (event `review.created` → notification thật); ⚠️ BE chưa enforce Project Closed (mục 4b.5) |
+| Notification | SignalR badge realtime; list; mark-read | ✅ list/mark-read/read-all OK; consumer RabbitMQ hoạt động thật (nhận `project.assigned`, `review.created`...); ⏳ SignalR realtime chưa test (cần browser) |
+| Messaging | Chat realtime `/chathub` (int IDs) | ⬜ bỏ qua — DB `AITasker_Messaging_dev` chưa tồn tại + chưa JWT (gap BE cũ, mục 4) |
+| AI | Sinh mô tả job/service; recommend expert | ✅ job-description 200 với payload `{roughRequirements}` — chạy **fallback** vì chưa set Gemini key (mục 4b.7); service-description/recommend chưa test riêng |
+| Admin | Dashboard KPI (+refresh gRPC); lock user; remove job/service; duyệt certificate | ✅ toàn bộ sau fix FE admin baseURL (P2-1): KPI refresh cập nhật thật (3 users/3 jobs/1 service qua 3 gRPC); lock user → login 403; certificates (qua Profile) phân quyền đúng; ⏳ remove job/service chưa bấm (tránh xoá data test) |
 
 ---
 
