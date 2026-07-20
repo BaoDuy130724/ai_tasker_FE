@@ -15,7 +15,9 @@ export interface Project {
   statusName: string
   createdAt: string
   updatedAt: string
-  jobId: number
+  // Đúng 1 trong 2 field có giá trị: jobId (luồng Job/Proposal) hoặc serviceId (mua thẳng Marketplace).
+  jobId: number | null
+  serviceId: number | null
   proposedPrice: number
   clientId: number
   expertId: number
@@ -26,9 +28,11 @@ export interface Project {
 
 export interface Contract {
   id: number
-  proposalId: number
+  proposalId: number | null
+  serviceId: number | null
   clientId: number
   expertId: number
+  proposedPrice: number | null
   terms: string
   signedAt: string
 }

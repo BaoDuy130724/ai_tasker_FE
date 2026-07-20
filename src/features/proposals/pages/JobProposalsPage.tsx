@@ -7,8 +7,9 @@ import type { Proposal } from "../types"
 import { ProposalStatus } from "../types"
 import { approveProposal } from "@/features/contracts-projects/api"
 import type { Contract } from "@/features/contracts-projects/types"
+import { ContractSignedModal } from "@/features/contracts-projects/components/ContractSignedModal"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert, FileSignature, X } from "lucide-react"
+import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert } from "lucide-react"
 import { UserLink } from "@/shared/components/UserLink"
 
 export const JobProposalsPage: React.FC = () => {
@@ -185,54 +186,11 @@ export const JobProposalsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal điều khoản Hợp đồng — cơ hội DUY NHẤT xem lại Contract vì BE không có GET lại sau khi tạo */}
       {approvedContract && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2 font-bold text-lg text-primary">
-                <FileSignature className="h-5 w-5" />
-                Hợp đồng đã được kích hoạt
-              </div>
-              <button
-                className="text-muted-foreground hover:text-foreground bg-transparent border-0 cursor-pointer"
-                onClick={() => navigate(`/projects/${approvedContract.projectId}`)}
-                aria-label="Đóng"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Mã hợp đồng</span>
-                <strong className="text-foreground">#{approvedContract.contract.id}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Ngày ký</span>
-                <strong className="text-foreground">
-                  {new Date(approvedContract.contract.signedAt).toLocaleString("vi-VN")}
-                </strong>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Điều khoản hợp đồng</p>
-                <p className="rounded-lg border border-border bg-secondary/20 p-3 leading-relaxed whitespace-pre-wrap">
-                  {approvedContract.contract.terms || "(Không có điều khoản bổ sung)"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-border">
-              <Button
-                onClick={() => navigate(`/projects/${approvedContract.projectId}`)}
-                className="bg-primary text-primary-foreground font-semibold"
-              >
-                Đến trang Dự án
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ContractSignedModal
+          contract={approvedContract.contract}
+          onGoToProject={() => navigate(`/projects/${approvedContract.projectId}`)}
+        />
       )}
     </div>
   )

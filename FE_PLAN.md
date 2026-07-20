@@ -24,12 +24,16 @@
    đều kèm token + đúng vai trò (Client/Expert/Admin).
 3. ✅ **gRPC (Identity/Job/Marketplace) NAY ĐÃ BẬT** — các màn Admin (dashboard/user/job/service) trước
    đây ghi "gRPC chưa bật → sẽ lỗi" nay chạy thật được; cần re-verify live + dọn comment cũ.
-4. ⏳ **Gaps giữ nguyên**: File chưa qua Gateway, Messaging/AI chưa có JWT, Order chưa có entity BE.
+4. ⏳ **Gaps giữ nguyên**: File chưa qua Gateway, Messaging/AI chưa có JWT.
 5. ✅ **Audit độ phủ dữ liệu ĐÃ XONG (2026-07-20 tối, mục 7).** Đối chiếu 77 endpoint BE ↔ toàn bộ FE:
    Dashboard (E1), hồ sơ công khai + thay ID trần bằng tên thật (E2), sửa dịch vụ Marketplace (E3),
    rating tổng hợp thật (E4), file đính kèm Chat (E5), và toàn bộ field bị fetch-nhưng-không-hiển-thị
    (7.2) — **đều đã fix**. Phát hiện thêm 1 gap BE mới (chat attachment không broadcast realtime — mục 4).
    `tsc -b` + `npm run build` pass.
+6. ✅ **Order ĐÃ NỐI THẬT (2026-07-20 khuya, mục 7.3)** — không còn mock/localStorage. BE (Project
+   service, branch `features/Feature_Project_PurchaseService`, chưa merge `develop`) thêm endpoint
+   `POST /contracts/purchase-service`; FE `CreateOrderPage`/`OrderDashboardPage` gọi thật. Đã verify
+   sống qua HTTP + 31 unit test BE pass.
 
 ---
 
@@ -265,9 +269,44 @@ cần token Admin (BE mục 12) — FE đã note đúng.
 
 `tsc -b` + `npm run build` (Vite production build thật, không chỉ type-check) đều pass sau toàn bộ thay đổi ở mục 7.
 
-### 7.3. Cố tình mock, không phải bug (giữ nguyên, đã ghi ở mục 4/D11)
+### 7.3. Order — ✅ Đã nối thật 2026-07-20 tối (không còn mock)
 
-- `orders/*` (`CreateOrderPage`, `OrderDashboardPage`) — 100% `localStorage`, BE chưa có entity Order nào để gọi.
+> **Bối cảnh (chỉ đạo leader team, cùng ngày):** giao dịch mua AiService trên Marketplace **không có
+> service/entity Order riêng** — tái dùng Contract → Project → Milestone → Escrow sẵn có của Project
+> service. Lúc phát hiện gap này (đầu mục 7.3, xem lịch sử git), BE **chưa có** endpoint hỗ trợ —
+> `ContractsController` khi đó chỉ có `approve-proposal`, bắt buộc phải có `Proposal`/`Job`.
+
+**Đã làm BE** (nhánh `ai-tasker` `features/Feature_Project_PurchaseService`, tách từ `develop`, service
+Project thuộc phần phụ trách trực tiếp — không phải finding-only nữa):
+- `Contract`: `ProposalId`/`Proposal` chuyển sang nullable, thêm `ServiceId` + `ProposedPrice` (chốt giá
+  lúc ký, không phụ thuộc `Proposal.ProposedPrice` nữa — luồng Marketplace không có Proposal để đọc).
+- Endpoint mới `POST /api/contracts/purchase-service` (body `{serviceId}`, `ClientId` suy từ token) —
+  verify service tồn tại + đang `Published` qua `IMarketplaceServiceClient` (HTTP, cùng pattern
+  `IJobServiceClient`), chặn tự mua dịch vụ của chính mình (422), service không tồn tại (404).
+- `ProjectDetailsDto`: `JobId` đổi sang nullable, thêm `ServiceId`; `ProposedPrice` ưu tiên
+  `Contract.ProposedPrice`, fallback `Proposal.ProposedPrice` cho Contract cũ tạo trước migration.
+- Migration `AddServicePurchaseToContract` đã apply + **verify sống qua HTTP thật**: mua thành công
+  (201, Contract+Project đúng shape), tự mua bị chặn (422), service không tồn tại (404), project cũ từ
+  luồng Job vẫn hiển thị đúng qua fallback. 31 unit test cũ vẫn pass. Đã commit trên branch, **chưa
+  merge `develop`** (chờ xong xuôi theo yêu cầu).
+
+**Đã làm FE:**
+- `contracts-projects/api.ts`: thêm `purchaseService(serviceId)` — cùng response shape với
+  `approveProposal` (`ApproveProposalResult` = `{contract, project}`), tái dùng luôn type.
+- `contracts-projects/types.ts`: `Contract.proposalId`/`serviceId` nullable, thêm `proposedPrice`;
+  `Project.jobId` nullable, thêm `serviceId`.
+- Tách `ContractSignedModal` (component dùng chung, `features/contracts-projects/components/`) từ
+  modal đã làm cho `JobProposalsPage` — dùng lại cho cả luồng approve-proposal lẫn purchase-service.
+- `CreateOrderPage.tsx`: **bỏ form terms/deadline tự chế cũ** (BE `purchase-service` không nhận 2 field
+  này — Contract tự sinh terms, không có deadline) → đổi thành trang xác nhận mua đơn giản (tóm tắt
+  dịch vụ + giá + Expert qua `UserLink`), gọi `purchaseService` thật, hiện `ContractSignedModal`, điều
+  hướng `/projects/:id`. Việc mô tả yêu cầu chi tiết/deadline giờ làm ở bước tạo Milestone trên trang Dự
+  án (cơ chế đã có sẵn, đúng kiến trúc hơn thay vì trùng lặp ở bước đặt mua).
+- `OrderDashboardPage.tsx`: bỏ hẳn `orderStore`/`localStorage` — "đơn mua dịch vụ" giờ là `getProjects()`
+  lọc `serviceId != null`. Bỏ các nút giả Accept/Reject/Complete (không có state machine tương ứng ở BE
+  — tiến độ thật xử lý ở trang chi tiết Dự án qua Milestone/Escrow đã có).
+- Xoá `features/orders/store.ts` + `features/orders/types.ts` (không còn ai import).
+- `tsc -b`, `oxlint`, `npm run build` đều sạch.
 
 ---
 

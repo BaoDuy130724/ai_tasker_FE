@@ -49,6 +49,17 @@ export const approveProposal = async (proposalId: number) => {
   return response.data?.data
 }
 
+// Mua thẳng 1 AiService trên Marketplace — không qua Job/Proposal (quyết định kiến trúc leader
+// team 2026-07-20: giao dịch Marketplace không có service/entity Order riêng, tái dùng
+// Contract → Project → Milestone → Escrow sẵn có). ClientId lấy từ token, không truyền trong body.
+// Trả về cùng shape với approveProposal (Contract + Project) — BE: POST /contracts/purchase-service.
+export const purchaseService = async (serviceId: number) => {
+  const response = await projectApi.post<ApiResponse<ApproveProposalResult>>("/contracts/purchase-service", {
+    serviceId,
+  })
+  return response.data?.data
+}
+
 export const getProjects = async () => {
   const response = await projectApi.get<ApiResponse<Project[]>>("/projects")
   return response.data?.data || []
