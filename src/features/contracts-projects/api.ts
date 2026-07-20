@@ -26,6 +26,8 @@ export interface EscrowTransaction {
   createdAt: string
 }
 
+// Khớp BE DisputeDto (KHÔNG có statusName — FE tự map từ status số).
+// status: 0 Open, 1 UnderReview, 2 Resolved · resolution: 0 RefundClient, 1 ReleaseToExpert
 export interface Dispute {
   id: number
   projectId: number
@@ -34,10 +36,10 @@ export interface Dispute {
   description: string
   evidenceFileUrl: string | null
   status: number
-  statusName: string
   resolution: number | null
   resolvedBy: number | null
   resolvedAt: string | null
+  createdAt: string
 }
 
 export const approveProposal = async (proposalId: number) => {

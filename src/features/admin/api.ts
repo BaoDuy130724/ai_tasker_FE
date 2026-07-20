@@ -36,8 +36,9 @@ export const refreshDashboardKpi = async () => {
   return response.data?.data
 }
 
-// Jobs management (⚠️ handler BE gọi qua gRPC sang Job service — Job chưa bật gRPC server nên
-// endpoint này hiện sẽ lỗi runtime cho tới khi BE nối gRPC. Vẫn build UI/wiring đúng trước.)
+// Jobs management — Admin BE gọi gRPC sang Job service (JobAdminService, port 5104).
+// ✅ gRPC đã BẬT và test round-trip (PROJECT_CONTEXT mục 10, 2026-07-17). Cần Job service
+// đang chạy; lưu ý GetJobs phía BE bỏ qua tham số keyword (query chỉ lọc theo Skill).
 export interface GetAdminJobsParams {
   keyword?: string
   status?: string
@@ -55,7 +56,7 @@ export const removeAdminJob = async (id: number, reason: string) => {
   return response.data?.data
 }
 
-// Services management (⚠️ cùng gap gRPC như Jobs, sang Marketplace service)
+// Services management — gRPC sang Marketplace (MarketplaceAdminService, port 5254) ✅ đã bật.
 export interface GetAdminServicesParams {
   keyword?: string
   page?: number

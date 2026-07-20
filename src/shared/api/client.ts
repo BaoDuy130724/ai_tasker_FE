@@ -34,7 +34,7 @@ const getBaseUrl = (service: string, useGateway: boolean) => {
       case "file":
         return import.meta.env.VITE_FILE_SERVICE_URL || "http://localhost:5110"
       case "admin":
-        return import.meta.env.VITE_ADMIN_SERVICE_URL || "http://localhost:5007"
+        return import.meta.env.VITE_ADMIN_SERVICE_URL || "http://localhost:5030"
       default:
         return gatewayUrl
     }

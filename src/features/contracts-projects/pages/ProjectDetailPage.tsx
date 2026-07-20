@@ -16,6 +16,7 @@ import type { EscrowTransaction } from "../api"
 import type { Project, Milestone } from "../types"
 import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
+import { getApiErrorMessage } from "@/lib/utils"
 import { ReviewSection } from "@/features/reviews/components/ReviewSection"
 import {
   DollarSign,
@@ -82,7 +83,8 @@ export const ProjectDetailPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err)
-      setErrorMsg("Không tải được thông tin chi tiết dự án.")
+      // BE trả 403 (Forbid, không body) khi user không phải Client/Expert của project này.
+      setErrorMsg(getApiErrorMessage(err, "Không tải được thông tin chi tiết dự án."))
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +110,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Nạp tiền thất bại.")
+      alert(getApiErrorMessage(err, "Nạp tiền thất bại."))
     } finally {
       setIsSubmitting(false)
     }
@@ -130,7 +132,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Rút tiền thất bại.")
+      alert(getApiErrorMessage(err, "Rút tiền thất bại."))
     } finally {
       setIsSubmitting(false)
     }
@@ -161,7 +163,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Tạo Milestone thất bại.")
+      alert(getApiErrorMessage(err, "Tạo Milestone thất bại."))
     } finally {
       setIsSubmitting(false)
     }
@@ -175,7 +177,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Duyệt Milestone thất bại.")
+      alert(getApiErrorMessage(err, "Duyệt Milestone thất bại."))
     }
   }
 
@@ -192,7 +194,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Yêu cầu sửa đổi thất bại.")
+      alert(getApiErrorMessage(err, "Yêu cầu sửa đổi thất bại."))
     } finally {
       setIsSubmitting(false)
     }
@@ -215,7 +217,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Nộp bài thất bại.")
+      alert(getApiErrorMessage(err, "Nộp bài thất bại."))
     } finally {
       setIsSubmitting(false)
     }
@@ -237,7 +239,7 @@ export const ProjectDetailPage: React.FC = () => {
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Mở tranh chấp thất bại.")
+      alert(getApiErrorMessage(err, "Mở tranh chấp thất bại."))
     } finally {
       setIsSubmitting(false)
     }

@@ -5,6 +5,7 @@ import type { Job } from "../types"
 import { JobStatus } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
+import { getApiErrorMessage } from "@/lib/utils"
 import { Calendar, DollarSign, ArrowLeft, ShieldAlert, Sparkles, UserCheck, Edit3 } from "lucide-react"
 
 export const JobDetailPage: React.FC = () => {
@@ -45,11 +46,11 @@ export const JobDetailPage: React.FC = () => {
     
     setIsClosing(true)
     try {
-      await closeJob(job.id, Number(user.id))
+      await closeJob(job.id)
       await fetchJobDetail() // Load lại chi tiết sau khi đóng
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Đóng công việc thất bại. Chỉ chủ sở hữu mới có quyền.")
+      alert(getApiErrorMessage(err, "Đóng công việc thất bại. Chỉ chủ sở hữu mới có quyền."))
     } finally {
       setIsClosing(false)
     }
@@ -78,13 +79,12 @@ export const JobDetailPage: React.FC = () => {
         budget: editForm.budget,
         deadline: editForm.deadline,
         skills: editForm.skillsText.split(",").map((s) => s.trim()).filter(Boolean),
-        clientId: Number(user.id),
       })
       setIsEditing(false)
       await fetchJobDetail()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Cập nhật công việc thất bại.")
+      alert(getApiErrorMessage(err, "Cập nhật công việc thất bại."))
     } finally {
       setIsSavingEdit(false)
     }

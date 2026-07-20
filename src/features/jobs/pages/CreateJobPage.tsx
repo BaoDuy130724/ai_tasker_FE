@@ -102,11 +102,8 @@ export const CreateJobPage: React.FC = () => {
     setIsSubmitting(true)
     setErrorMsg(null)
     try {
-      const clientId = Number(user.id)
-      await createJob({
-        ...values,
-        clientId,
-      })
+      // BE suy clientId từ JWT — không gửi trong body nữa (JobsController 2026-07-20).
+      await createJob(values)
       navigate("/")
     } catch (err: any) {
       console.error(err)

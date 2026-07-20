@@ -37,13 +37,14 @@ export const getJobById = async (id: number) => {
   return response.data?.data
 }
 
+// BE 2026-07-20: ClientId suy từ JWT, đã XOÁ khỏi CreateJobRequest/UpdateJobRequest
+// (JobsController — "không nhận từ body, nếu không thì ai cũng tạo job hộ người khác").
 export interface CreateJobInput {
   title: string
   description: string
   budget: number
   deadline: string
   skills: string[]
-  clientId: number
 }
 
 export const createJob = async (input: CreateJobInput) => {
@@ -57,7 +58,6 @@ export interface UpdateJobInput {
   budget: number
   deadline: string
   skills: string[]
-  clientId: number
 }
 
 export const updateJob = async (id: number, input: UpdateJobInput) => {
@@ -65,7 +65,8 @@ export const updateJob = async (id: number, input: UpdateJobInput) => {
   return response.data?.data
 }
 
-export const closeJob = async (id: number, clientId: number) => {
-  const response = await jobApi.put<ApiResponse<any>>(`/jobs/${id}/close`, { clientId })
+// BE close không nhận body — chủ job suy từ token (401 thiếu token, 403 không phải chủ).
+export const closeJob = async (id: number) => {
+  const response = await jobApi.put<ApiResponse<any>>(`/jobs/${id}/close`)
   return response.data?.data
 }
