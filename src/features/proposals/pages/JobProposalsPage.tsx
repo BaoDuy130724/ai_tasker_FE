@@ -6,8 +6,10 @@ import { getProposalsByJob } from "../api"
 import type { Proposal } from "../types"
 import { ProposalStatus } from "../types"
 import { approveProposal } from "@/features/contracts-projects/api"
+import type { Contract } from "@/features/contracts-projects/types"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert } from "lucide-react"
+import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert, FileSignature, X } from "lucide-react"
+import { UserLink } from "@/shared/components/UserLink"
 
 export const JobProposalsPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>()
@@ -18,6 +20,9 @@ export const JobProposalsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [approvingId, setApprovingId] = useState<number | null>(null)
+  // BE không có endpoint GET lại Contract sau khi tạo — đây là cơ hội DUY NHẤT thấy điều khoản hợp đồng,
+  // nên hiện ngay trong modal thay vì chỉ lấy project.id rồi bỏ qua toàn bộ object Contract.
+  const [approvedContract, setApprovedContract] = useState<{ contract: Contract; projectId: number } | null>(null)
 
   const fetchData = async () => {
     if (!jobId) return
@@ -48,8 +53,9 @@ export const JobProposalsPage: React.FC = () => {
     setApprovingId(proposalId)
     try {
       const result = await approveProposal(proposalId)
-      alert("Phê duyệt proposal thành công! Hợp đồng & Dự án đã được kích hoạt.")
-      if (result?.project?.id) {
+      if (result?.contract && result?.project?.id) {
+        setApprovedContract({ contract: result.contract, projectId: result.project.id })
+      } else if (result?.project?.id) {
         navigate(`/projects/${result.project.id}`)
       } else {
         navigate("/")
@@ -132,7 +138,7 @@ export const JobProposalsPage: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-secondary text-foreground border border-border px-2.5 py-0.5 rounded-full">
                       <UserCheck className="h-3.5 w-3.5" />
-                      Expert ID: #{prop.expertId}
+                      <UserLink userId={prop.expertId} className="hover:underline" />
                     </span>
                     <span className="text-xs text-muted-foreground">Nộp ngày {new Date(prop.createdAt).toLocaleDateString("vi-VN")}</span>
                   </div>
@@ -178,6 +184,56 @@ export const JobProposalsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal điều khoản Hợp đồng — cơ hội DUY NHẤT xem lại Contract vì BE không có GET lại sau khi tạo */}
+      {approvedContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2 font-bold text-lg text-primary">
+                <FileSignature className="h-5 w-5" />
+                Hợp đồng đã được kích hoạt
+              </div>
+              <button
+                className="text-muted-foreground hover:text-foreground bg-transparent border-0 cursor-pointer"
+                onClick={() => navigate(`/projects/${approvedContract.projectId}`)}
+                aria-label="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Mã hợp đồng</span>
+                <strong className="text-foreground">#{approvedContract.contract.id}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Ngày ký</span>
+                <strong className="text-foreground">
+                  {new Date(approvedContract.contract.signedAt).toLocaleString("vi-VN")}
+                </strong>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1">Điều khoản hợp đồng</p>
+                <p className="rounded-lg border border-border bg-secondary/20 p-3 leading-relaxed whitespace-pre-wrap">
+                  {approvedContract.contract.terms || "(Không có điều khoản bổ sung)"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button
+                onClick={() => navigate(`/projects/${approvedContract.projectId}`)}
+                className="bg-primary text-primary-foreground font-semibold"
+              >
+                Đến trang Dự án
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

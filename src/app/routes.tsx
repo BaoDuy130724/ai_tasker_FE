@@ -21,6 +21,7 @@ import { AiServiceDetailPage } from "@/features/marketplace/pages/AiServiceDetai
 import { FavoritesPage } from "@/features/marketplace/pages/FavoritesPage"
 import { ExpertServiceListPage } from "@/features/marketplace/pages/ExpertServiceListPage"
 import { CreateAiServicePage } from "@/features/marketplace/pages/CreateAiServicePage"
+import { EditAiServicePage } from "@/features/marketplace/pages/EditAiServicePage"
 import { CreateOrderPage } from "@/features/orders/pages/CreateOrderPage"
 import { OrderDashboardPage } from "@/features/orders/pages/OrderDashboardPage"
 import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage"
@@ -31,6 +32,7 @@ import { AdminServiceListPage } from "@/features/admin/pages/AdminServiceListPag
 import { AdminDisputeListPage } from "@/features/admin/pages/AdminDisputeListPage"
 import { ChatPage } from "@/features/messaging/pages/ChatPage"
 import { ProfilePage } from "@/features/profile/pages/ProfilePage"
+import { PublicProfilePage } from "@/features/profile/pages/PublicProfilePage"
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -55,6 +57,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/marketplace/services/:id" element={<AiServiceDetailPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/profile/me" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<PublicProfilePage />} />
 
           {/* Client Routes */}
           <Route element={<ProtectedRoute allowedRoles={["Client"]} />}>
@@ -74,6 +77,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/expert/projects" element={<ProjectListPage />} />
             <Route path="/expert/services" element={<ExpertServiceListPage />} />
             <Route path="/expert/services/new" element={<CreateAiServicePage />} />
+            <Route path="/expert/services/:id/edit" element={<EditAiServicePage />} />
             <Route path="/expert/orders" element={<OrderDashboardPage />} />
           </Route>
 

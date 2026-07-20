@@ -18,6 +18,7 @@ import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
 import { getApiErrorMessage } from "@/lib/utils"
 import { ReviewSection } from "@/features/reviews/components/ReviewSection"
+import { UserLink } from "@/shared/components/UserLink"
 import {
   DollarSign,
   ArrowLeft,
@@ -37,6 +38,13 @@ import {
 
 // Nhãn cho EscrowTransactionType (enum số từ BE): 0..4
 const ESCROW_TYPE_LABELS = ["Deposit", "Lock", "Release", "Withdrawal", "Refund"]
+// Nhãn cho EscrowTransactionStatus (enum số từ BE): 0 Pending, 1 Completed, 2 Failed
+const ESCROW_STATUS_LABELS = ["Pending", "Completed", "Failed"]
+const ESCROW_STATUS_STYLES = [
+  "bg-amber-500/10 text-amber-600",
+  "bg-emerald-500/10 text-emerald-600",
+  "bg-destructive/10 text-destructive",
+]
 
 export const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -391,18 +399,24 @@ export const ProjectDetailPage: React.FC = () => {
             <p className="text-xs font-semibold text-muted-foreground uppercase">Lịch sử giao dịch</p>
             <div className="space-y-1.5 max-h-56 overflow-y-auto">
               {transactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between text-xs bg-secondary/10 border border-border/40 rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold uppercase text-[10px] rounded px-1.5 py-0.5 border ${
-                      tx.type === 0 || tx.type === 2
-                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                    }`}>
-                      {ESCROW_TYPE_LABELS[tx.type] ?? `#${tx.type}`}
-                    </span>
-                    <span className="text-muted-foreground">{new Date(tx.createdAt).toLocaleString("vi-VN")}</span>
+                <div key={tx.id} className="text-xs bg-secondary/10 border border-border/40 rounded-lg px-3 py-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold uppercase text-[10px] rounded px-1.5 py-0.5 border ${
+                        tx.type === 0 || tx.type === 2
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      }`}>
+                        {ESCROW_TYPE_LABELS[tx.type] ?? `#${tx.type}`}
+                      </span>
+                      <span className={`font-semibold uppercase text-[9px] rounded px-1.5 py-0.5 ${ESCROW_STATUS_STYLES[tx.status] ?? "bg-secondary text-muted-foreground"}`}>
+                        {ESCROW_STATUS_LABELS[tx.status] ?? `#${tx.status}`}
+                      </span>
+                      <span className="text-muted-foreground">{new Date(tx.createdAt).toLocaleString("vi-VN")}</span>
+                    </div>
+                    <span className="font-bold text-foreground">${tx.amount}</span>
                   </div>
-                  <span className="font-bold text-foreground">${tx.amount}</span>
+                  {tx.note && <p className="text-muted-foreground pl-0.5">{tx.note}</p>}
                 </div>
               ))}
             </div>
@@ -565,13 +579,13 @@ export const ProjectDetailPage: React.FC = () => {
                 <span>Mã số Hợp đồng:</span>
                 <strong className="text-foreground">#{project.contractId}</strong>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Nhà tuyển dụng (Client):</span>
-                <strong className="text-foreground">#{project.clientId} {isClient && "(Bạn)"}</strong>
+                <strong className="text-foreground"><UserLink userId={project.clientId} /> {isClient && "(Bạn)"}</strong>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Chuyên gia (Expert):</span>
-                <strong className="text-foreground">#{project.expertId} {isExpert && "(Bạn)"}</strong>
+                <strong className="text-foreground"><UserLink userId={project.expertId} /> {isExpert && "(Bạn)"}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Ngày ký hợp đồng:</span>

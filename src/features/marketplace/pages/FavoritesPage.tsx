@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { getFavorites, removeFavorite } from "../api"
 import type { Favorite } from "../types"
 import { Heart, DollarSign, Clock, Star, Layers } from "lucide-react"
+import { UserLink } from "@/shared/components/UserLink"
 
 export const FavoritesPage: React.FC = () => {
   const [favorites, setFavorites] = useState<Favorite[]>([])
@@ -78,10 +79,11 @@ export const FavoritesPage: React.FC = () => {
               </div>
               <div className="p-4 space-y-2">
                 <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>Expert #{fav.service.expertId}</span>
+                  <UserLink userId={fav.service.expertId} className="hover:underline font-semibold" />
                   <span className="flex items-center gap-0.5 text-amber-500 font-bold">
                     <Star className="h-3.5 w-3.5 fill-amber-500" />
                     {fav.service.averageRating || "5.0"}
+                    <span className="text-muted-foreground font-normal">({fav.service.totalReviews || 0})</span>
                   </span>
                 </div>
                 <Link to={`/marketplace/services/${fav.serviceId}`} className="font-extrabold text-sm text-foreground hover:text-primary transition-all line-clamp-1 block">

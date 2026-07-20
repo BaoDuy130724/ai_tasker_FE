@@ -3,6 +3,7 @@ import { Star, MessageSquare, CornerDownRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createReview, createReply, getReviewsByProject } from "../api"
 import type { Review } from "../types"
+import { UserLink } from "@/shared/components/UserLink"
 
 interface ReviewSectionProps {
   /** Project.id (int) — Review service dùng đúng int này làm projectId (không map Guid). */
@@ -158,8 +159,9 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
             return (
               <div key={r.id} className="border border-border rounded-lg p-4 bg-secondary/10 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {isMine ? "Bạn" : `User #${r.reviewerId}`} đánh giá {isForMe ? "bạn" : `User #${r.revieweeId}`}
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                    {isMine ? "Bạn" : <UserLink userId={r.reviewerId} className="hover:underline font-semibold" />} đánh giá{" "}
+                    {isForMe ? "bạn" : <UserLink userId={r.revieweeId} className="hover:underline font-semibold" />}
                   </span>
                   <span className="text-[10px] text-muted-foreground">{formatDate(r.createdAt)}</span>
                 </div>
@@ -168,9 +170,12 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
 
                 {r.reply ? (
                   <div className="ml-4 mt-2 pl-3 border-l-2 border-primary/30 space-y-1">
-                    <p className="text-xs font-semibold text-primary flex items-center gap-1">
-                      <CornerDownRight className="h-3 w-3" /> Phản hồi
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-primary flex items-center gap-1">
+                        <CornerDownRight className="h-3 w-3" /> Phản hồi
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">{formatDate(r.reply.createdAt)}</span>
+                    </div>
                     <p className="text-sm text-foreground">{r.reply.content}</p>
                   </div>
                 ) : (

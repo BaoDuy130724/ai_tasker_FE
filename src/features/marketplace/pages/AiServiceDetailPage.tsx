@@ -4,6 +4,7 @@ import { getServiceById, getFavorites, addFavorite, removeFavorite } from "../ap
 import type { AiService } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
+import { UserLink } from "@/shared/components/UserLink"
 import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles, Heart } from "lucide-react"
 
 export const AiServiceDetailPage: React.FC = () => {
@@ -100,13 +101,20 @@ export const AiServiceDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2/3: Details */}
         <div className="lg:col-span-2 space-y-6">
+          {service.coverImageUrl && (
+            <div className="rounded-xl overflow-hidden border border-border shadow-sm h-56 md:h-72">
+              <img src={service.coverImageUrl} alt={service.title} className="w-full h-full object-cover" />
+            </div>
+          )}
+
           <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm space-y-5">
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span>Danh mục ID: #{service.categoryId}</span>
+                <span>{service.categoryName || `Danh mục #${service.categoryId}`}</span>
                 <span className="flex items-center gap-0.5 text-amber-500 font-bold">
                   <Star className="h-3.5 w-3.5 fill-amber-500" />
                   {service.averageRating || "5.0"}
+                  <span className="text-muted-foreground font-normal">({service.totalReviews || 0} đánh giá)</span>
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3">
@@ -162,9 +170,9 @@ export const AiServiceDetailPage: React.FC = () => {
                 <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> Thời gian bàn giao:</span>
                 <strong className="text-foreground">{service.deliveryTimeDays} ngày</strong>
               </div>
-              <div className="flex justify-between">
-                <span>Mã số Expert chủ quản:</span>
-                <strong className="text-foreground">#{service.expertId} {isOwner && "(Bạn)"}</strong>
+              <div className="flex justify-between items-center">
+                <span>Expert chủ quản:</span>
+                <strong className="text-foreground"><UserLink userId={service.expertId} /> {isOwner && "(Bạn)"}</strong>
               </div>
             </div>
 

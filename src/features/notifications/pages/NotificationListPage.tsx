@@ -1,7 +1,32 @@
 import React, { useEffect } from "react"
 import { useNotificationStore } from "../store"
 import { Button } from "@/components/ui/button"
-import { Bell, Check, Clock, ExternalLink } from "lucide-react"
+import { Bell, Check, Clock, ExternalLink, Briefcase, Star, CheckCircle, DollarSign, ShieldAlert, MessageSquare } from "lucide-react"
+
+// BE ghi EventType = routing key RabbitMQ thật (vd "project.assigned", "review.created" — xem
+// RabbitMqConsumerService.cs), không phải chuỗi PascalCase. Match theo tiền tố để chịu được
+// event mới phát sinh (Job/Marketplace publisher vẫn ⏳ chưa xong ở BE — xem FE_PLAN mục 4).
+const getEventVisual = (eventType: string): { icon: React.ReactNode; className: string } => {
+  const prefix = eventType?.split(".")[0] || ""
+  switch (prefix) {
+    case "project":
+      return { icon: <Briefcase className="h-4 w-4" />, className: "bg-blue-500/10 text-blue-600" }
+    case "review":
+      return { icon: <Star className="h-4 w-4" />, className: "bg-amber-500/10 text-amber-600" }
+    case "job":
+      return { icon: <Briefcase className="h-4 w-4" />, className: "bg-indigo-500/10 text-indigo-600" }
+    case "milestone":
+      return { icon: <CheckCircle className="h-4 w-4" />, className: "bg-emerald-500/10 text-emerald-600" }
+    case "escrow":
+      return { icon: <DollarSign className="h-4 w-4" />, className: "bg-emerald-500/10 text-emerald-600" }
+    case "dispute":
+      return { icon: <ShieldAlert className="h-4 w-4" />, className: "bg-destructive/10 text-destructive" }
+    case "message":
+      return { icon: <MessageSquare className="h-4 w-4" />, className: "bg-primary/10 text-primary" }
+    default:
+      return { icon: <Bell className="h-4 w-4" />, className: "bg-primary/10 text-primary" }
+  }
+}
 
 export const NotificationListPage: React.FC = () => {
   const { notifications, isLoading, fetchNotifications, markAsRead, markAllAsRead } =
@@ -64,7 +89,9 @@ export const NotificationListPage: React.FC = () => {
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-          {notifications.map((n) => (
+          {notifications.map((n) => {
+            const visual = getEventVisual(n.eventType)
+            return (
             <div
               key={n.id}
               onClick={() => !n.isRead && markAsRead(n.id)}
@@ -72,8 +99,8 @@ export const NotificationListPage: React.FC = () => {
                 n.isRead ? "bg-card opacity-70 hover:bg-secondary/20" : "bg-primary/5 hover:bg-primary/10"
               }`}
             >
-              <div className={`mt-1 rounded-full p-2 ${n.isRead ? "bg-secondary text-muted-foreground" : "bg-primary/10 text-primary"}`}>
-                <Bell className="h-4 w-4" />
+              <div className={`mt-1 rounded-full p-2 ${n.isRead ? "bg-secondary text-muted-foreground" : visual.className}`}>
+                {visual.icon}
               </div>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between gap-4">
@@ -103,7 +130,8 @@ export const NotificationListPage: React.FC = () => {
                 <div className="h-2 w-2 rounded-full bg-primary mt-2" />
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

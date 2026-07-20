@@ -6,6 +6,7 @@ import { JobStatus } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
 import { getApiErrorMessage } from "@/lib/utils"
+import { UserLink } from "@/shared/components/UserLink"
 import { Calendar, DollarSign, ArrowLeft, ShieldAlert, Sparkles, UserCheck, Edit3 } from "lucide-react"
 
 export const JobDetailPage: React.FC = () => {
@@ -176,8 +177,10 @@ export const JobDetailPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <UserCheck className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-muted-foreground text-xs">Mã nhà tuyển dụng (Client ID)</p>
-              <p className="font-semibold">#{job.clientId} {isOwner && "(Bạn)"}</p>
+              <p className="text-muted-foreground text-xs">Nhà tuyển dụng</p>
+              <p className="font-semibold">
+                <UserLink userId={job.clientId} /> {isOwner && "(Bạn)"}
+              </p>
             </div>
           </div>
         </div>

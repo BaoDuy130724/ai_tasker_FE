@@ -4,7 +4,7 @@ import { useAuthStore } from "@/features/auth/store"
 import { getServices, deleteService } from "../api"
 import type { AiService } from "../types"
 import { Button } from "@/components/ui/button"
-import { Layers, DollarSign, Clock, PlusCircle, Trash2 } from "lucide-react"
+import { Layers, DollarSign, Clock, PlusCircle, Trash2, Pencil } from "lucide-react"
 
 export const ExpertServiceListPage: React.FC = () => {
   const { user } = useAuthStore()
@@ -118,6 +118,12 @@ export const ExpertServiceListPage: React.FC = () => {
                 <Link to={`/marketplace/services/${service.id}`} className="w-full md:w-auto">
                   <Button variant="outline" size="sm" className="w-full border-border hover:bg-secondary text-xs">
                     Xem demo
+                  </Button>
+                </Link>
+                <Link to={`/expert/services/${service.id}/edit`} className="w-full md:w-auto">
+                  <Button variant="outline" size="sm" className="w-full border-border hover:bg-secondary text-xs flex items-center gap-1">
+                    <Pencil className="h-3.5 w-3.5" />
+                    Sửa
                   </Button>
                 </Link>
                 <Button

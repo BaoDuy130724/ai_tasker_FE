@@ -21,6 +21,7 @@ import {
   getAllSkills,
 } from "../api"
 import type { UserProfile, Skill } from "../types"
+import { UserRatingSummary } from "@/features/reviews/components/UserRatingSummary"
 
 const certificateStatusStyle = (status: string) => {
   switch (status) {
@@ -231,6 +232,9 @@ export const ProfilePage: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Đánh giá & Uy tín (nguồn thật từ Review service, không phải số denormalize) */}
+      {profile && <UserRatingSummary userId={profile.userId} />}
 
       {/* Skills */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">

@@ -25,6 +25,11 @@
 3. ✅ **gRPC (Identity/Job/Marketplace) NAY ĐÃ BẬT** — các màn Admin (dashboard/user/job/service) trước
    đây ghi "gRPC chưa bật → sẽ lỗi" nay chạy thật được; cần re-verify live + dọn comment cũ.
 4. ⏳ **Gaps giữ nguyên**: File chưa qua Gateway, Messaging/AI chưa có JWT, Order chưa có entity BE.
+5. ✅ **Audit độ phủ dữ liệu ĐÃ XONG (2026-07-20 tối, mục 7).** Đối chiếu 77 endpoint BE ↔ toàn bộ FE:
+   Dashboard (E1), hồ sơ công khai + thay ID trần bằng tên thật (E2), sửa dịch vụ Marketplace (E3),
+   rating tổng hợp thật (E4), file đính kèm Chat (E5), và toàn bộ field bị fetch-nhưng-không-hiển-thị
+   (7.2) — **đều đã fix**. Phát hiện thêm 1 gap BE mới (chat attachment không broadcast realtime — mục 4).
+   `tsc -b` + `npm run build` pass.
 
 ---
 
@@ -148,6 +153,10 @@ cần token Admin (BE mục 12) — FE đã note đúng.
 - **`ApproveProposal`** chưa verify người duyệt có sở hữu job (BE gap 15.7) — chỉ ghi nhận, không workaround ở FE.
 - **Notification realtime**: SignalR `/hubs/notification` OK; Job publisher event vẫn ⏳ ở BE → job created/closed
   có thể chưa bắn notification. UI nên chịu được "chưa nhận được" (fallback list, không phụ thuộc 100% realtime).
+- **Chat attachment không broadcast realtime** (phát hiện 2026-07-20 khi làm E5): `POST /Chat/sessions/{id}/messages/attachment`
+  chỉ lưu DB qua `ChatService.SendMessageWithAttachmentAsync`, không gọi `Clients.Group(...).SendAsync("ReceiveMessage", ...)`
+  như đường hub `SendMessage` (`ChatHub.cs`). Người nhận không thấy tin nhắn có file đính kèm cho tới khi tải lại lịch sử.
+  FE không tự thêm broadcast được (không có quyền vào Hub từ REST call) — chờ BE thêm broadcast vào `SendMessageWithAttachmentAsync`.
 
 ## 4b. Phát hiện MỚI khi verify live 2026-07-20 (đều là BE/môi trường — FE chỉ ghi nhận)
 
@@ -221,6 +230,44 @@ cần token Admin (BE mục 12) — FE đã note đúng.
 3. `npm run build && npm run lint` phải pass.
 4. Tắt mock, chạy BE mới, test golden path + 1 edge (ưu tiên 401/403/empty).
 5. Cập nhật checklist mục 5.
+
+---
+
+## 7. Audit độ phủ dữ liệu (2026-07-20) — BE trả gì nhưng FE chưa hiển thị hết
+
+> Đối chiếu toàn bộ **77 endpoint / 11 service BE** (route + response DTO field-by-field, đọc trực tiếp
+> Controllers) với toàn bộ **route + API call site FE** (route + response type + nơi field được render).
+> Khác mục 5 (verify luồng nghiệp vụ chạy được hay không) — mục này trả lời riêng câu **"data BE có tồn
+> tại nhưng FE có show hết cho người dùng thấy không"**.
+
+### 7.1. Trang/tính năng chưa nối gì (0% — thiếu cả tính năng, không chỉ thiếu field)
+
+| # | Trang/hàm | Hiện trạng | Việc cần làm | Ưu tiên |
+| :-- | :--- | :--- | :--- | :--- |
+| E1 | `/dashboard` (`DashboardPage`) | ✅ **Đã fix 2026-07-20.** Nối thật: Client (`getJobs` lọc `clientId`, `getProjects`, đếm proposal Pending qua `getProposalsByJob` cho từng job), Expert (`getMyProposals` + `getProjects`, tổng `escrowLockedBalance`/`escrowAvailableBalance`), Admin (`getDashboardKpi` + `getPendingCertificates`). Thêm skeleton loading + danh sách "gần đây" (job/proposal/project) thay ô rỗng tĩnh. `tsc -b`/`oxlint` sạch. | ~~Nối `getJobs`/`getMyProposals`/`getProjects` theo role~~ | ~~P1~~ ✅ |
+| E2 | Xem hồ sơ người khác — `getProfileByUserId` | ✅ **Đã fix 2026-07-20.** Thêm `features/profile/pages/PublicProfilePage.tsx` (route `/profile/:userId`, chỉ đọc, chỉ hiện chứng chỉ `Approved`) + component dùng chung `shared/components/UserLink.tsx` (resolve userId→tên thật qua `getProfileByUserId`, cache trong module tránh fetch lặp trong 1 phiên trang, fallback "Người dùng #id" nếu lỗi/404). Đã thay ID trần bằng `<UserLink>` ở: `JobDetailPage` (clientId), `ProjectDetailPage` (clientId+expertId), `AiServiceDetailPage`/`FavoritesPage`/`MarketplacePage` (expertId), `JobProposalsPage` (expertId). `tsc -b`/`oxlint` sạch (không phát sinh warning mới). | ~~Thêm trang hồ sơ công khai + link từ các nơi đang show ID trần~~ | ~~P1~~ ✅ |
+| E3 | Sửa dịch vụ Marketplace — `updateService` | ✅ **Đã fix 2026-07-20.** Thêm `features/marketplace/pages/EditAiServicePage.tsx` (route `/expert/services/:id/edit`, prefill từ `getServiceById`, form giống Create + thêm dropdown trạng thái Draft/Published/Archived vì `UpdateAiServiceInput` yêu cầu `status`). Thêm nút "Sửa" trong `ExpertServiceListPage`. `tsc -b` sạch. | ~~Thêm form edit~~ | ~~P2~~ ✅ |
+| E4 | Rating tổng hợp thật — `getReviewsByUser` / `getAverageRating` | ✅ **Đã fix 2026-07-20.** Thêm `features/reviews/components/UserRatingSummary.tsx` (gọi đúng nguồn Review service, không phải số denormalize Marketplace) — nhúng vào cả `ProfilePage` (hồ sơ mình) và `PublicProfilePage` (hồ sơ người khác). Nhân tiện sửa luôn `ReviewSection.tsx` — chỗ hiện "User #123" trần cũng đổi sang `UserLink`. Không đổi số `averageRating` hiển thị trên card Marketplace (đó là rating theo từng *service*, khác khái niệm rating tổng hợp theo *user* của Review service — giữ nguyên vì đúng ngữ nghĩa khác nhau). `tsc -b` sạch. | ~~Thêm mục đánh giá ở trang hồ sơ~~ | ~~P2~~ ✅ |
+| E5 | File đính kèm trong Chat | ✅ **Đã fix 2026-07-20.** Thêm `sendMessageAttachment()` trong `messaging/api.ts` (multipart `senderId`/`content`/`file`, đọc đúng field từ `ChatController.SendMessageWithAttachment` — verify trực tiếp code BE, không đoán). `ChatPage`: render attachment chip (tên file, dung lượng, link tải) trong bong bóng chat; thêm nút 📎 mở file picker gửi kèm. ⚠️ **Lưu ý phát hiện khi đọc code BE**: endpoint REST này KHÔNG broadcast qua SignalR (`Clients.Group(...).SendAsync("ReceiveMessage", ...)` chỉ nằm trong `ChatHub.cs` cho đường hub `SendMessage`, không có trong `ChatService.SendMessageWithAttachmentAsync`) — FE tự thêm message vào state cho người gửi thấy ngay, nhưng **người nhận sẽ không thấy realtime**, chỉ thấy khi tải lại lịch sử. Đây là gap BE, không sửa được từ FE — ghi vào mục 4 gaps. `tsc -b` sạch. | ~~Render attachment chip + nút đính kèm~~ | ~~P2~~ ✅ |
+| E6 | File service (`fileApi`) | Khởi tạo axios instance trong `client.ts` nhưng **không nơi nào import** — 0% tích hợp thật. Certificate/portfolio/deliverable/dispute-evidence hiện là ô nhập URL tay | Chờ BE mở route Gateway cho `/api/file` (đã ghi nhận ở mục 4, D9) rồi thay ô nhập URL bằng upload thật | ⏳ chờ BE |
+
+### 7.2. Field đã fetch về nhưng lặng lẽ không hiển thị — ✅ Đã fix toàn bộ 2026-07-20
+
+| Domain | Field bị bỏ qua | Đã xử lý |
+| :--- | :--- | :--- |
+| Marketplace (`AiService`) | `expertName`, `expertAvatarUrl` | ✅ Giải quyết gián tiếp qua `UserLink` (E2) — resolve tên/avatar thật từ Profile service thay vì dùng field denormalize sẵn có trên DTO (đơn giản hơn, cùng 1 component dùng chung mọi nơi) |
+| Marketplace (`AiService`) | `categoryName`, `totalReviews` | ✅ Thêm badge category + số lượng đánh giá cạnh sao rating ở `MarketplacePage`/`FavoritesPage`/`AiServiceDetailPage` |
+| Project (`Contract` sau khi `approveProposal`) | Toàn bộ object (`terms`, `signedAt`) | ✅ BE **không có endpoint GET lại Contract** sau khi tạo — đây là cơ hội duy nhất thấy nó, nên `JobProposalsPage` giờ hiện modal điều khoản hợp đồng (mã HĐ, ngày ký, terms) trước khi điều hướng sang trang Dự án, thay vì âm thầm bỏ qua |
+| Notification | `eventType` | ✅ Thêm `getEventVisual()` map icon/màu theo tiền tố event — **đã đọc code BE thật** (`RabbitMqConsumerService.cs`: `EventType = routingKey`) để lấy đúng giá trị thật (`project.assigned`, `project.closed`, `review.created`, `review.reply_created`), match theo tiền tố (`project.`/`review.`/`job.`/...) để chịu được event mới phát sinh sau này thay vì liệt kê cứng |
+| Project Escrow (`EscrowTransaction`) | `status`, `note` | ✅ Thêm badge status (Pending/Completed/Failed) + dòng note trong lịch sử giao dịch ở `ProjectDetailPage` |
+| Review reply | `createdAt` | ✅ Hiện mốc thời gian cạnh nhãn "Phản hồi" trong `ReviewSection` |
+| Marketplace detail (`AiServiceDetailPage`) | `coverImageUrl` | ✅ Thêm banner ảnh đầu trang chi tiết (trước đó chỉ có ở list, đúng là sót UI) |
+
+`tsc -b` + `npm run build` (Vite production build thật, không chỉ type-check) đều pass sau toàn bộ thay đổi ở mục 7.
+
+### 7.3. Cố tình mock, không phải bug (giữ nguyên, đã ghi ở mục 4/D11)
+
+- `orders/*` (`CreateOrderPage`, `OrderDashboardPage`) — 100% `localStorage`, BE chưa có entity Order nào để gọi.
 
 ---
 

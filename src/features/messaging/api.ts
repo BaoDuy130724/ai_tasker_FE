@@ -31,3 +31,19 @@ export const markSessionAsRead = async (sessionId: number, userId: number) => {
   const response = await messagingApi.put<ApiResponse<null>>(`/Chat/sessions/${sessionId}/read/${userId}`)
   return response.data
 }
+
+// BE ChatController.SendMessageWithAttachment nhận [FromForm] senderId/content + IFormFile file (≤10MB).
+// Lưu ý: đường REST này KHÔNG broadcast qua SignalR (chỉ đường hub "SendMessage" mới Clients.Group.SendAsync) —
+// nên phía gửi phải tự thêm message vào state, phía nhận chỉ thấy khi load lại lịch sử.
+export const sendMessageAttachment = async (sessionId: number, senderId: number, file: File, content?: string) => {
+  const formData = new FormData()
+  formData.append("senderId", String(senderId))
+  if (content) formData.append("content", content)
+  formData.append("file", file)
+  const response = await messagingApi.post<ApiResponse<ChatMessage>>(
+    `/Chat/sessions/${sessionId}/messages/attachment`,
+    formData,
+    { headers: { "Content-Type": undefined } }
+  )
+  return response.data?.data
+}

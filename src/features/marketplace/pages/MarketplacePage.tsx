@@ -4,6 +4,7 @@ import { getServices, getCategories } from "../api"
 import type { AiService, Category } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, DollarSign, Clock, Star, Layers, SlidersHorizontal, ArrowUpDown } from "lucide-react"
+import { UserLink } from "@/shared/components/UserLink"
 
 export const MarketplacePage: React.FC = () => {
   const [services, setServices] = useState<AiService[]>([])
@@ -203,12 +204,19 @@ export const MarketplacePage: React.FC = () => {
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>Expert ID: #{service.expertId}</span>
+                      <UserLink userId={service.expertId} className="hover:underline font-semibold" />
                       <span className="flex items-center gap-0.5 text-amber-500 font-bold">
                         <Star className="h-3.5 w-3.5 fill-amber-500" />
                         {service.averageRating || "5.0"}
+                        <span className="text-muted-foreground font-normal">({service.totalReviews || 0})</span>
                       </span>
                     </div>
+
+                    {service.categoryName && (
+                      <span className="inline-flex rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold uppercase border border-primary/20">
+                        {service.categoryName}
+                      </span>
+                    )}
 
                     <Link to={`/marketplace/services/${service.id}`} className="font-extrabold text-base text-foreground hover:text-primary transition-all line-clamp-1">
                       {service.title}

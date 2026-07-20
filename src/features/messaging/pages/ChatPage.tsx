@@ -1,11 +1,17 @@
 import React, { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
-import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead } from "../api"
+import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead, sendMessageAttachment } from "../api"
 import type { ChatSession, ChatMessage } from "../types"
 import * as signalR from "@microsoft/signalr"
 import { Button } from "@/components/ui/button"
-import { MessageSquare, Send, User, Clock, CheckCircle } from "lucide-react"
+import { MessageSquare, Send, User, Clock, CheckCircle, Paperclip, FileText, Download } from "lucide-react"
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export const ChatPage: React.FC = () => {
   const { user, accessToken } = useAuthStore()
@@ -17,7 +23,9 @@ export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState("")
   const [hubConnection, setHubConnection] = useState<signalR.HubConnection | null>(null)
+  const [isSendingAttachment, setIsSendingAttachment] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const myId = user ? Number(user.id) : 0
 
@@ -152,6 +160,26 @@ export const ChatPage: React.FC = () => {
     }
   }
 
+  const handleAttachmentSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !activeSession || !myId) return
+    setIsSendingAttachment(true)
+    try {
+      const message = await sendMessageAttachment(activeSession.id, myId, file)
+      // Đường REST đính kèm không broadcast qua SignalR (chỉ hub "SendMessage" mới làm việc đó) —
+      // tự thêm vào state để người gửi thấy ngay; phía kia chỉ thấy khi load lại lịch sử (gap BE).
+      if (message) {
+        setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]))
+      }
+    } catch (err) {
+      console.error("Lỗi gửi file đính kèm:", err)
+      alert("Gửi file đính kèm thất bại. Kiểm tra dung lượng file (tối đa 10MB).")
+    } finally {
+      setIsSendingAttachment(false)
+      e.target.value = ""
+    }
+  }
+
   const getPartnerLabel = (session: ChatSession) => {
     const isClientRole = user?.role === "Client"
     const partnerId = isClientRole ? session.expertId : session.clientId
@@ -239,7 +267,27 @@ export const ChatPage: React.FC = () => {
                           : "bg-secondary text-foreground rounded-tl-none"
                       }`}
                     >
-                      <p>{m.content}</p>
+                      {m.content && <p>{m.content}</p>}
+                      {m.attachments?.length > 0 && (
+                        <div className={`space-y-1.5 ${m.content ? "mt-2" : ""}`}>
+                          {m.attachments.map((att) => (
+                            <a
+                              key={att.id}
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs transition-colors ${
+                                isMine ? "bg-primary-foreground/10 hover:bg-primary-foreground/20" : "bg-background hover:bg-secondary/60 border border-border"
+                              }`}
+                            >
+                              <FileText className="h-4 w-4 shrink-0" />
+                              <span className="flex-1 truncate font-medium">{att.fileName}</span>
+                              <span className="opacity-70 shrink-0">{formatFileSize(att.fileSize)}</span>
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       <span className="block text-[9px] text-right mt-1.5 opacity-60 flex items-center justify-end gap-0.5">
                         <Clock className="h-2.5 w-2.5" />
                         {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -253,6 +301,23 @@ export const ChatPage: React.FC = () => {
 
             {/* Input Footer */}
             <form onSubmit={handleSendMessage} className="p-4 border-t border-border bg-card flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleAttachmentSelected}
+                disabled={isSendingAttachment}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="border-border shrink-0"
+                disabled={isSendingAttachment}
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Đính kèm file"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               <input
                 type="text"
                 value={inputText}
