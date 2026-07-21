@@ -266,8 +266,13 @@ export const DashboardPage: React.FC = () => {
   // Render Dashboard của Expert
   const renderExpertDashboard = () => {
     const activeProjects = expertProjects.filter((p) => p.status !== ProjectStatus.Closed)
-    const lockedBalance = expertProjects.reduce((sum, p) => sum + (p.escrowLockedBalance || 0), 0)
-    const availableBalance = expertProjects.reduce((sum, p) => sum + (p.escrowAvailableBalance || 0), 0)
+    // Locked = phần Client đã ký quỹ nhưng CHƯA nghiệm thu. Available = Expert ĐÃ được duyệt
+    // nhưng chỉ rút được khi dự án đóng — không phải "tiền rút được ngay" như nhãn cũ ghi.
+    const pendingBalance = expertProjects.reduce((sum, p) => sum + (p.escrowLockedBalance || 0), 0)
+    const earnedBalance = expertProjects.reduce((sum, p) => sum + (p.escrowAvailableBalance || 0), 0)
+    const withdrawableBalance = expertProjects
+      .filter((p) => p.status === ProjectStatus.Closed || p.status === ProjectStatus.Cancelled)
+      .reduce((sum, p) => sum + (p.escrowAvailableBalance || 0), 0)
     const recentProposals = [...expertProposals]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3)
@@ -299,15 +304,19 @@ export const DashboardPage: React.FC = () => {
               icon={<Clock className="h-5 w-5 text-amber-500" />}
             />
             <KpiTile
-              label="Số dư tạm khóa"
-              value={`$${lockedBalance.toLocaleString("vi-VN")}`}
-              hint="đang trong Escrow"
+              label="Chờ nghiệm thu"
+              value={`$${pendingBalance.toLocaleString("vi-VN")}`}
+              hint="Client chưa duyệt"
               icon={<DollarSign className="h-5 w-5 text-indigo-500" />}
             />
             <KpiTile
-              label="Số dư khả dụng"
-              value={`$${availableBalance.toLocaleString("vi-VN")}`}
-              hint="đã giải ngân, có thể rút"
+              label="Đã nghiệm thu"
+              value={`$${earnedBalance.toLocaleString("vi-VN")}`}
+              hint={
+                withdrawableBalance > 0
+                  ? `rút được $${withdrawableBalance.toLocaleString("vi-VN")}`
+                  : "rút khi dự án đóng"
+              }
               icon={<CheckCircle className="h-5 w-5 text-emerald-500" />}
             />
           </div>

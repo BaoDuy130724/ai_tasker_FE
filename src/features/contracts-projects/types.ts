@@ -4,6 +4,9 @@ export const ProjectStatus = {
   Delivered: 2,
   Approved: 3,
   Closed: 4,
+  /** Kết thúc sớm: Client dừng ngang hoặc tranh chấp đã phân xử. Cùng Closed là 2 trạng thái
+   *  TERMINAL — chỉ khi đó Expert mới rút được tiền. */
+  Cancelled: 5,
 } as const
 
 export type ProjectStatus = typeof ProjectStatus[keyof typeof ProjectStatus]

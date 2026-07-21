@@ -13,6 +13,7 @@ import {
   depositEscrow,
   withdrawEscrow,
   openDispute,
+  cancelProject,
   getTransactionHistory
 } from "../api"
 import type { EscrowTransaction } from "../api"
@@ -36,7 +37,8 @@ import {
   ArrowDownLeft,
   Send,
   Edit3,
-  Gavel
+  Gavel,
+  XCircle
 } from "lucide-react"
 
 // Nhãn cho EscrowTransactionType (enum số từ BE): 0..4
@@ -81,6 +83,11 @@ export const ProjectDetailPage: React.FC = () => {
   const generateIdempotencyKey = () => {
     return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
   }
+
+  // Phần giá hợp đồng chưa được chia thành milestone. BE bắt buộc tổng milestone phải phủ
+  // KÍN giá hợp đồng thì Expert mới nộp bài được, nên đây là con số Client cần đưa về 0.
+  const allocatedAmount = milestones.reduce((sum, m) => sum + m.amount, 0)
+  const unallocatedAmount = (project?.proposedPrice ?? 0) - allocatedAmount
 
   const fetchProjectDetails = useCallback(async () => {
     if (!id) return
@@ -164,8 +171,14 @@ export const ProjectDetailPage: React.FC = () => {
     e.preventDefault()
     if (!project) return
     
-    if (milestoneForm.amount > project.escrowAvailableBalance) {
-      toast.error("Số dư ký quỹ không đủ.", "Vui lòng nạp thêm tiền vào Escrow trước khi tạo Milestone này.")
+    // Trần của milestone là phần giá hợp đồng CHƯA được chia, không phải số dư Available.
+    // Available giờ mang nghĩa "Expert đã nghiệm thu" nên lúc chia milestone nó luôn bằng 0 —
+    // so với nó thì mọi milestone đều bị chặn.
+    if (milestoneForm.amount > unallocatedAmount) {
+      toast.error(
+        "Vượt quá giá trị hợp đồng.",
+        `Chỉ còn $${unallocatedAmount} chưa được chia trong tổng $${project.proposedPrice}.`
+      )
       return
     }
 
@@ -191,12 +204,35 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }
 
+  const handleCancelProject = async () => {
+    if (!project) return
+    // Hệ quả khác hẳn nhau tuỳ đã có bàn giao hay chưa, nên nói thẳng ra trước khi Client bấm.
+    const ok = await confirm({
+      title: "Dừng dự án này?",
+      description: allocatedAmount > 0 || milestones.some((m) => m.status >= 2)
+        ? "Expert đã bàn giao nên toàn bộ số tiền còn lại trong ký quỹ sẽ được chuyển cho Expert. Nếu bạn không hài lòng về sản phẩm, hãy mở tranh chấp thay vì dừng dự án."
+        : "Expert chưa bàn giao gì nên toàn bộ tiền ký quỹ sẽ được hoàn lại cho bạn.",
+      confirmText: "Dừng dự án",
+      variant: "destructive",
+    })
+    if (!ok) return
+    try {
+      await cancelProject(project.id)
+      toast.success("Đã dừng dự án.", "Tiền ký quỹ đã được xử lý theo tình trạng bàn giao.")
+      await fetchProjectDetails()
+    } catch (err: any) {
+      console.error(err)
+      toast.error("Dừng dự án thất bại.", getApiErrorMessage(err, ""))
+    }
+  }
+
   const handleApproveMilestone = async (milestoneId: number) => {
     const ok = await confirm({
       title: "Duyệt milestone này?",
       description:
-        "Tiền tương ứng sẽ được giải ngân từ Locked Balance sang Expert ngay lập tức và không thể thu hồi.",
-      confirmText: "Duyệt & giải ngân",
+        "Số tiền của milestone sẽ được ghi nhận là của Expert và không thể thu hồi. Expert nhận " +
+        "được tiền khi toàn bộ dự án hoàn thành.",
+      confirmText: "Nghiệm thu",
       variant: "destructive",
     })
     if (!ok) return
@@ -305,6 +341,11 @@ export const ProjectDetailPage: React.FC = () => {
     )
   }
 
+  // Closed và Cancelled đều là trạng thái kết thúc — không còn thao tác nghiệp vụ nào,
+  // và cũng chính là lúc Expert rút được tiền.
+  const isProjectEnded =
+    project.status === ProjectStatus.Closed || project.status === ProjectStatus.Cancelled
+
   const isClient = user && project.clientId === Number(user.id)
   const isExpert = user && project.expertId === Number(user.id)
 
@@ -330,16 +371,29 @@ export const ProjectDetailPage: React.FC = () => {
           Quay lại
         </button>
 
-        {project.status !== ProjectStatus.Closed && (
-          <Button
-            onClick={() => setActiveModal("openDispute")}
-            variant="outline"
-            size="sm"
-            className="border-destructive/30 text-destructive hover:bg-destructive/10 transition-all flex items-center gap-1"
-          >
-            <Gavel className="h-3.5 w-3.5" />
-            Khiếu nại / Tranh chấp ⚠️
-          </Button>
+        {!isProjectEnded && (
+          <div className="flex items-center gap-2">
+            {isClient && (
+              <Button
+                onClick={handleCancelProject}
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-all flex items-center gap-1"
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                Dừng dự án
+              </Button>
+            )}
+            <Button
+              onClick={() => setActiveModal("openDispute")}
+              variant="outline"
+              size="sm"
+              className="border-destructive/30 text-destructive hover:bg-destructive/10 transition-all flex items-center gap-1"
+            >
+              <Gavel className="h-3.5 w-3.5" />
+              Khiếu nại / Tranh chấp ⚠️
+            </Button>
+          </div>
         )}
       </div>
 
@@ -375,7 +429,8 @@ export const ProjectDetailPage: React.FC = () => {
           </h3>
           
           <div className="flex gap-2">
-            {isClient && (
+            {/* Nạp đúng một lần cho cả hợp đồng — đã có tiền thì ẩn nút đi, BE cũng chặn nạp lần hai. */}
+            {isClient && !isProjectEnded && project.escrowTotalBalance === 0 && (
               <Button
                 onClick={() => setActiveModal("deposit")}
                 size="sm"
@@ -385,7 +440,9 @@ export const ProjectDetailPage: React.FC = () => {
                 Nạp tiền Ký Quỹ
               </Button>
             )}
-            {isExpert && (
+            {/* Chỉ hiện khi thật sự rút được: dự án đã kết thúc VÀ có tiền đã nghiệm thu.
+                Không gate ở đây thì Expert bấm vào chỉ để nhận lỗi 422 từ BE. */}
+            {isExpert && isProjectEnded && project.escrowAvailableBalance > 0 && (
               <Button
                 onClick={() => setActiveModal("withdraw")}
                 variant="outline"
@@ -393,7 +450,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="border-border hover:bg-secondary font-semibold flex items-center gap-1"
               >
                 <ArrowDownLeft className="h-3.5 w-3.5" />
-                Rút tiền khả dụng
+                Rút ${project.escrowAvailableBalance}
               </Button>
             )}
           </div>
@@ -405,11 +462,11 @@ export const ProjectDetailPage: React.FC = () => {
             <p className="text-xl font-extrabold text-foreground mt-1">${project.escrowTotalBalance} USD</p>
           </div>
           <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground text-emerald-600">Khả dụng (Available)</p>
+            <p className="text-xs text-muted-foreground text-emerald-600">Đã nghiệm thu</p>
             <p className="text-xl font-extrabold text-emerald-600 mt-1">${project.escrowAvailableBalance} USD</p>
           </div>
           <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground text-amber-600">Đang khóa (Locked)</p>
+            <p className="text-xs text-muted-foreground text-amber-600">Chưa nghiệm thu</p>
             <p className="text-xl font-extrabold text-amber-600 mt-1">${project.escrowLockedBalance} USD</p>
           </div>
         </div>
@@ -638,18 +695,30 @@ export const ProjectDetailPage: React.FC = () => {
               <ArrowUpRight className="h-5 w-5" />
               Nạp tiền ký quỹ (Deposit)
             </h3>
-            <p className="text-xs text-muted-foreground">Tiền nạp vào sẽ được lưu tại số dư Khả dụng (Available Balance) để Client phân bổ vào các Milestone.</p>
+            <p className="text-xs text-muted-foreground">
+              Nạp <strong>đúng ${project.proposedPrice} USD</strong> — toàn bộ giá trị hợp đồng, nạp
+              một lần duy nhất. Tiền được nền tảng giữ và chỉ chuyển dần cho Expert sau mỗi
+              milestone bạn nghiệm thu.
+            </p>
             <div>
               <label className="block text-sm font-semibold mb-1.5">Số tiền nạp ($ USD)</label>
               <input
                 type="number"
                 required
-                min={1}
+                min={project.proposedPrice}
+                max={project.proposedPrice}
                 value={amountInput || ""}
                 onChange={(e) => setAmountInput(Number(e.target.value))}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="500"
+                placeholder={String(project.proposedPrice)}
               />
+              <button
+                type="button"
+                onClick={() => setAmountInput(project.proposedPrice)}
+                className="mt-1.5 text-xs font-semibold text-primary hover:underline"
+              >
+                Điền đúng giá hợp đồng (${project.proposedPrice})
+              </button>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Hủy</Button>
@@ -670,7 +739,10 @@ export const ProjectDetailPage: React.FC = () => {
               <ArrowDownLeft className="h-5 w-5" />
               Rút tiền khả dụng (Withdraw)
             </h3>
-            <p className="text-xs text-muted-foreground">Rút số dư Khả dụng về tài khoản cá nhân. Bạn có tối đa <strong>${project.escrowAvailableBalance} USD</strong> khả dụng để rút.</p>
+            <p className="text-xs text-muted-foreground">
+              Rút phần đã được Client nghiệm thu về tài khoản cá nhân — chỉ khả dụng khi dự án đã
+              đóng hoặc bị huỷ. Bạn có tối đa <strong>${project.escrowAvailableBalance} USD</strong>.
+            </p>
             <div>
               <label className="block text-sm font-semibold mb-1.5">Số tiền muốn rút ($ USD)</label>
               <input
@@ -747,7 +819,7 @@ export const ProjectDetailPage: React.FC = () => {
                     type="number"
                     required
                     min={1}
-                    max={project.escrowAvailableBalance}
+                    max={unallocatedAmount}
                     value={milestoneForm.amount || ""}
                     onChange={(e) => setMilestoneForm({ ...milestoneForm, amount: Number(e.target.value) })}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none"

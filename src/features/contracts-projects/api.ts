@@ -154,6 +154,15 @@ export interface OpenDisputeInput {
   evidenceFileUrl?: string | null
 }
 
+/**
+ * Client dừng dự án giữa chừng.
+ * BE quyết cách chia tiền: đã có bàn giao thì toàn bộ phần chưa nghiệm thu chuyển cho Expert,
+ * chưa bàn giao gì thì hoàn lại Client.
+ */
+export const cancelProject = async (projectId: number, reason?: string) => {
+  await projectApi.post(`/projects/${projectId}/cancel`, { reason })
+}
+
 export const openDispute = async (input: OpenDisputeInput) => {
   const response = await projectApi.post<ApiResponse<Dispute>>("/disputes", input)
   return response.data?.data
