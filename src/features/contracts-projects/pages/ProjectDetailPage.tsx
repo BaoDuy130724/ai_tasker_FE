@@ -238,7 +238,7 @@ export const ProjectDetailPage: React.FC = () => {
         "Số tiền của milestone sẽ được ghi nhận là của Expert và không thể thu hồi. Expert nhận " +
         "được tiền khi toàn bộ dự án hoàn thành.",
       confirmText: "Nghiệm thu",
-      variant: "destructive",
+      variant: "warning",
     })
     if (!ok) return
     try {

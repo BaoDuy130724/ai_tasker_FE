@@ -45,7 +45,7 @@ export const AdminDisputeListPage: React.FC = () => {
       title: "Ra phán quyết cho tranh chấp này?",
       description: `Phương án: ${resolutionText}. Tiền trong Escrow sẽ được xử lý ngay và không thể hoàn tác.`,
       confirmText: resolutionText,
-      variant: "destructive",
+      variant: "warning",
     })
     if (!ok) return
 

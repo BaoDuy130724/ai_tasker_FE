@@ -52,7 +52,7 @@ export const JobDetailPage: React.FC = () => {
       title: "Đóng tin tuyển dụng này?",
       description: "Expert sẽ không nộp được proposal mới nữa. Các proposal đã nhận vẫn xem lại được.",
       confirmText: "Đóng tin",
-      variant: "destructive",
+      variant: "warning",
     })
     if (!ok) return
 

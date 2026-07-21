@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { AlertTriangle, HelpCircle, PenLine } from "lucide-react"
+import { AlertCircle, AlertTriangle, HelpCircle, PenLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DialogContext,
@@ -65,15 +65,28 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [])
 
   const isDestructive = pending?.variant === "destructive"
+  const isWarning = pending?.variant === "warning"
+  // Cả hai đều không hoàn tác được → focus mặc định đặt ở nút an toàn.
+  const isWeighty = isDestructive || isWarning
   const input = pending?.input
   let Icon = HelpCircle
   if (input) Icon = PenLine
   else if (isDestructive) Icon = AlertTriangle
+  else if (isWarning) Icon = AlertCircle
   const isConfirmDisabled = Boolean(input?.required) && value.trim().length === 0
 
-  const accentWrap = isDestructive
-    ? "bg-destructive/10 text-destructive dark:text-red-400"
-    : "bg-primary/10 text-primary"
+  // Dark theme dùng tông sáng hơn vì màu gốc quá tối trên nền slate-950 (giống toast).
+  let accentWrap = "bg-primary/10 text-primary"
+  if (isDestructive) accentWrap = "bg-destructive/10 text-destructive dark:text-red-400"
+  else if (isWarning) accentWrap = "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+
+  // text-amber-950 chứ không phải text-white: chữ trắng trên amber-500 chỉ đạt ~2:1,
+  // không đủ tương phản để đọc.
+  let confirmClass = "bg-primary font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+  if (isDestructive)
+    confirmClass = "bg-destructive font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90"
+  else if (isWarning)
+    confirmClass = "bg-amber-500 font-semibold text-amber-950 shadow-sm hover:bg-amber-600"
 
   const fieldClass =
     "w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
@@ -155,9 +168,9 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 type="button"
                 variant="outline"
                 onClick={() => settle(false, "")}
-                // Hành động phá huỷ thì focus mặc định nằm ở nút an toàn: Enter vội không xoá nhầm.
-                // Có ô nhập thì focus thuộc về ô nhập nên bỏ qua.
-                autoFocus={isDestructive && !input}
+                // Hành động không hoàn tác được thì focus mặc định nằm ở nút an toàn:
+                // Enter vội không lỡ tay. Có ô nhập thì focus thuộc về ô nhập nên bỏ qua.
+                autoFocus={isWeighty && !input}
                 // bg-transparent thay vì bg-background của variant outline: ở dark theme bg-background
                 // tối hơn hẳn mặt dialog nên trông như một cái "lỗ" thủng trên panel.
                 className="border-border bg-transparent font-semibold text-elevated-foreground hover:bg-secondary"
@@ -167,12 +180,8 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
               <Button
                 type="submit"
                 disabled={isConfirmDisabled}
-                autoFocus={!isDestructive && !input}
-                className={
-                  isDestructive
-                    ? "bg-destructive font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90"
-                    : "bg-primary font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-                }
+                autoFocus={!isWeighty && !input}
+                className={confirmClass}
               >
                 {pending.confirmText ?? "Xác nhận"}
               </Button>

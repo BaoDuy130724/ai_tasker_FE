@@ -12,8 +12,18 @@ export interface ConfirmOptions {
   /** Nhãn nút xác nhận. Nên là ĐỘNG TỪ của hành động ("Phê duyệt", "Gỡ"), không phải "OK". */
   confirmText?: string
   cancelText?: string
-  /** `destructive` cho hành động mất mát/không hoàn tác được. */
-  variant?: "default" | "destructive"
+  /**
+   * Chọn theo BẢN CHẤT hành động, không theo mức độ nghiêm trọng:
+   *  - `default`     — thao tác thường, hoàn tác được.
+   *  - `warning`     — hệ trọng và không hoàn tác được, nhưng KHÔNG mất mát gì:
+   *                    phê duyệt đề xuất, nghiệm thu milestone, ra phán quyết, đóng tin.
+   *  - `destructive` — thật sự xoá/gỡ/huỷ, người dùng mất thứ đang có.
+   *
+   * Đừng dùng `destructive` chỉ để "cho nó nghiêm trọng". Trước đây mọi thao tác
+   * quan trọng đều gán destructive nên phê duyệt đề xuất — việc tích cực nhất trong
+   * cả luồng — cũng hiện đỏ như xoá dữ liệu. Đỏ ở khắp nơi thì đỏ hết ý nghĩa.
+   */
+  variant?: "default" | "warning" | "destructive"
 }
 
 /** Cấu hình ô nhập, dùng cho luồng thay thế `window.prompt`. */

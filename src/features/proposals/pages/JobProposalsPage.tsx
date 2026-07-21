@@ -60,7 +60,7 @@ export const JobProposalsPage: React.FC = () => {
       description:
         "Dự án và Hợp đồng mới sẽ tự động được tạo ra, đồng thời mọi đề xuất khác của job này sẽ bị từ chối. Thao tác không thể hoàn tác.",
       confirmText: "Phê duyệt",
-      variant: "destructive",
+      variant: "warning",
     })
     if (!ok) return
 
