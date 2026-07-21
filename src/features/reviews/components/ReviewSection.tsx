@@ -122,7 +122,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5">
       <h3 className="font-bold text-base border-b border-border pb-3 flex items-center gap-1.5">
         <Star className="h-5 w-5 text-primary" />
-        Đánh giá dự án #{projectId}
+        Đánh giá dự án
       </h3>
 
       {/* Form đánh giá — chỉ hiện nếu mình chưa đánh giá */}

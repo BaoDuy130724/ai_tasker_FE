@@ -4,7 +4,8 @@ import { getProjects } from "../api"
 import type { Project } from "../types"
 import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
-import { Briefcase, DollarSign, Calendar, ArrowRight, ShieldCheck, Activity } from "lucide-react"
+import { Briefcase, DollarSign, Calendar, ArrowRight, Activity } from "lucide-react"
+import { ProjectName } from "@/shared/components/ProjectName"
 
 export const ProjectListPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
@@ -81,8 +82,8 @@ export const ProjectListPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-primary" />
-                    Dự án #{proj.id}
+                    <Activity className="h-4 w-4 text-primary shrink-0" />
+                    <ProjectName jobId={proj.jobId} serviceId={proj.serviceId} />
                   </h3>
                   <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${getStatusStyle(proj.status)}`}>
                     {proj.statusName}
@@ -98,10 +99,8 @@ export const ProjectListPage: React.FC = () => {
                     <Calendar className="h-3.5 w-3.5" />
                     Bắt đầu: {formatDate(proj.createdAt)}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                    Hợp đồng: #{proj.contractId}
-                  </span>
+                  {/* Bỏ "Hợp đồng: #id" — mã hợp đồng không giúp người dùng làm được gì.
+                      Chi tiết hợp đồng đã có sẵn trong trang quản lý dự án. */}
                 </div>
               </div>
 

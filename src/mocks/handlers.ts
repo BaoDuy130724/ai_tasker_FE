@@ -11,6 +11,10 @@ import {
 import * as db from "./db"
 
 /* --------------------------- state phụ (mutation) ------------------------ */
+// Deliverables: giữ các lần nộp bài trong phiên để GET /deliverables/milestone/:id đọc lại.
+const mockDeliverables: {
+  id: number; milestoneId: number; expertId: number; fileUrl: string; note: string; submittedAt: string
+}[] = []
 // Notifications: khởi tạo theo user hiện tại, giữ trạng thái đã đọc trong phiên.
 let notifState: db.MockNotification[] | null = null
 const getNotifs = () => {
@@ -141,8 +145,13 @@ const projectRoutes: MockRoute[] = [
     return apiResponse(m || null, "Đã yêu cầu chỉnh sửa")
   }),
   // Deliverables
-  route("post", "/deliverables", ({ body }) =>
-    apiResponse({ id: Date.now(), milestoneId: Number(body.milestoneId), fileUrl: body.fileUrl, note: body.note, submittedAt: nowISO() }, "Đã nộp bàn giao")),
+  route("post", "/deliverables", ({ body }) => {
+    const d = { id: Date.now(), milestoneId: Number(body.milestoneId), expertId: 0, fileUrl: body.fileUrl, note: body.note, submittedAt: nowISO() }
+    mockDeliverables.unshift(d)
+    return apiResponse(d, "Đã nộp bàn giao")
+  }),
+  route("get", "/deliverables/milestone/:milestoneId", ({ params }) =>
+    apiResponse(mockDeliverables.filter((d) => d.milestoneId === Number(params.milestoneId)), "Thành công")),
   // Escrow
   route("post", "/escrow/deposit", ({ body }) => {
     const p = db.projects.find((x) => x.id === Number(body.projectId))

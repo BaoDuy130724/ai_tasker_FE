@@ -22,7 +22,9 @@ import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
 import { getApiErrorMessage } from "@/lib/utils"
 import { ReviewSection } from "@/features/reviews/components/ReviewSection"
-import { UserLink } from "@/shared/components/UserLink"
+import { UserBrief } from "@/shared/components/UserLink"
+import { MilestoneDeliverables } from "../components/MilestoneDeliverables"
+import { ProjectName } from "@/shared/components/ProjectName"
 import {
   DollarSign,
   ArrowLeft,
@@ -70,6 +72,9 @@ export const ProjectDetailPage: React.FC = () => {
   >(null)
   
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null)
+
+  // Tăng lên sau mỗi lần nộp bài để MilestoneDeliverables tải lại.
+  const [deliverableRefreshKey, setDeliverableRefreshKey] = useState(0)
 
   // Form states
   const [amountInput, setAmountInput] = useState(0)
@@ -279,6 +284,8 @@ export const ProjectDetailPage: React.FC = () => {
       setActiveModal(null)
       setDeliverableForm({ fileUrl: "", note: "" })
       setSelectedMilestoneId(null)
+      // Buộc các khối MilestoneDeliverables đang mở tải lại để thấy ngay bài vừa nộp.
+      setDeliverableRefreshKey((k) => k + 1)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
@@ -400,11 +407,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* Main Stats Header */}
       <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-semibold">Project ID: #{project.id}</span>
-            <span className="text-xs text-muted-foreground">•</span>
-            <span className="text-xs text-muted-foreground font-semibold">Contract ID: #{project.contractId}</span>
-          </div>
+          {/* Tên dự án lấy từ nguồn gốc (tin tuyển dụng / gói dịch vụ) thay cho
+              cặp "Project ID / Contract ID" cũ — id không nói lên điều gì với người dùng. */}
+          <ProjectName
+            jobId={project.jobId}
+            serviceId={project.serviceId}
+            className="text-xs text-muted-foreground font-semibold"
+          />
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Quản lý tiến độ dự án</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Hợp tác làm việc và phê duyệt thanh toán thông qua Escrow.</p>
         </div>
@@ -593,6 +602,14 @@ export const ProjectDetailPage: React.FC = () => {
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed max-w-md">{m.description}</p>
                       <span className="text-[10px] text-muted-foreground block">Hạn chót: {formatDate(m.dueDate)}</span>
+
+                      {/* Mốc đang chờ duyệt thì mở sẵn: Client phải xem được bài nộp
+                          TRƯỚC khi bấm "Duyệt & Giải ngân". */}
+                      <MilestoneDeliverables
+                        milestoneId={m.id}
+                        defaultOpen={m.status === 2}
+                        refreshKey={deliverableRefreshKey}
+                      />
                     </div>
 
                     <div className="flex flex-row md:flex-col items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 justify-between">
@@ -653,17 +670,13 @@ export const ProjectDetailPage: React.FC = () => {
             </h3>
             
             <div className="space-y-3.5 text-xs text-muted-foreground leading-relaxed">
-              <div className="flex justify-between">
-                <span>Mã số Hợp đồng:</span>
-                <strong className="text-foreground">#{project.contractId}</strong>
+              <div className="space-y-1.5">
+                <span className="block">Nhà tuyển dụng (Client):</span>
+                <UserBrief userId={project.clientId} suffix={isClient ? "(Bạn)" : undefined} />
               </div>
-              <div className="flex justify-between items-center">
-                <span>Nhà tuyển dụng (Client):</span>
-                <strong className="text-foreground"><UserLink userId={project.clientId} /> {isClient && "(Bạn)"}</strong>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Chuyên gia (Expert):</span>
-                <strong className="text-foreground"><UserLink userId={project.expertId} /> {isExpert && "(Bạn)"}</strong>
+              <div className="space-y-1.5">
+                <span className="block">Chuyên gia (Expert):</span>
+                <UserBrief userId={project.expertId} suffix={isExpert ? "(Bạn)" : undefined} />
               </div>
               <div className="flex justify-between">
                 <span>Ngày ký hợp đồng:</span>

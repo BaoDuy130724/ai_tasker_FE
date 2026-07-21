@@ -4,6 +4,7 @@ import { useAuthStore } from "@/features/auth/store"
 import { getProjects } from "@/features/contracts-projects/api"
 import type { Project } from "@/features/contracts-projects/types"
 import { UserLink } from "@/shared/components/UserLink"
+import { ProjectName } from "@/shared/components/ProjectName"
 import { ShoppingBag, DollarSign, Calendar, ArrowRight, Activity } from "lucide-react"
 
 const getStatusStyle = (statusName: string) => {
@@ -103,8 +104,8 @@ export const OrderDashboardPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-primary" />
-                    Đơn hàng #{project.id} · Dịch vụ #{project.serviceId}
+                    <Activity className="h-4 w-4 text-primary shrink-0" />
+                    <ProjectName jobId={project.jobId} serviceId={project.serviceId} />
                   </h3>
                   <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${getStatusStyle(project.statusName)}`}>
                     {project.statusName}

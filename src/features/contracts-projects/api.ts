@@ -1,5 +1,5 @@
 import { projectApi } from "@/shared/api/client"
-import type { Project, Contract, Milestone } from "./types"
+import type { Project, Contract, Milestone, Deliverable } from "./types"
 import type { ApiResponse } from "@/features/jobs/api"
 
 export interface ApproveProposalResult {
@@ -108,6 +108,15 @@ export interface SubmitDeliverableInput {
 export const submitDeliverable = async (input: SubmitDeliverableInput) => {
   const response = await projectApi.post<ApiResponse<any>>("/deliverables", input)
   return response.data?.data
+}
+
+// Lịch sử nộp bài của 1 milestone — mới nhất trước. Client xem trước khi duyệt,
+// Expert xem lại mình đã nộp gì. BE chỉ cho Client/Expert của hợp đồng hoặc Admin đọc.
+export const getDeliverablesByMilestone = async (milestoneId: number) => {
+  const response = await projectApi.get<ApiResponse<Deliverable[]>>(
+    `/deliverables/milestone/${milestoneId}`
+  )
+  return response.data?.data ?? []
 }
 
 // Escrow APIs

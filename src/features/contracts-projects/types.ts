@@ -50,3 +50,13 @@ export interface Milestone {
   status: number
   statusName: string
 }
+
+/** Một lần Expert nộp bài cho milestone. Mỗi lần yêu cầu sửa rồi nộp lại tạo thêm 1 bản ghi. */
+export interface Deliverable {
+  id: number
+  milestoneId: number
+  expertId: number
+  fileUrl: string
+  note: string
+  submittedAt: string
+}

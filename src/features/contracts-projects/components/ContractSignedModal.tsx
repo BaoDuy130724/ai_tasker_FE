@@ -34,10 +34,6 @@ export const ContractSignedModal: React.FC<ContractSignedModalProps> = ({ contra
 
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Mã hợp đồng</span>
-            <strong className="text-foreground">#{contract.id}</strong>
-          </div>
-          <div className="flex justify-between">
             <span className="text-muted-foreground">Ngày ký</span>
             <strong className="text-foreground">{new Date(contract.signedAt).toLocaleString("vi-VN")}</strong>
           </div>

@@ -216,48 +216,61 @@ export const JobDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Panel */}
-        <div className="border-t border-border pt-6 flex flex-col md:flex-row justify-end gap-3">
+        {/* Action Panel
+            Thứ tự trọng số thị giác: hành động phá huỷ (đóng tin) tách hẳn sang trái và
+            hạ xuống dạng ghost; hành động chính (xem đề xuất) nằm cuối bên phải — đây là
+            vị trí mắt và chuột tìm tới. Bản trước để 3 nút đặc cạnh nhau, nút đỏ nằm giữa
+            nên "đóng tin" vừa hét to ngang nút chính vừa dễ bấm nhầm. */}
+        <div className="border-t border-border pt-6">
           {/* Đối với chủ sở hữu Job (Client) */}
           {isOwner && (
-            <>
-              {/* Hành động chính của chủ job: xem đề xuất đã nhận để duyệt. */}
-              <Link to={`/jobs/${job.id}/proposals`}>
-                <Button className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-sm flex items-center gap-1.5">
-                  <UserCheck className="h-4 w-4" />
-                  Xem đề xuất ứng tuyển
-                </Button>
-              </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {job.status === JobStatus.Open && (
                 <Button
                   onClick={handleCloseJob}
                   disabled={isClosing}
-                  variant="destructive"
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold flex items-center gap-1.5"
+                  variant="ghost"
+                  className="w-full sm:w-auto font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <ShieldAlert className="h-4 w-4" />
+                  <ShieldAlert />
                   {isClosing ? "Đang đóng..." : "Đóng tin tuyển dụng"}
                 </Button>
               )}
-              <Button
-                onClick={handleOpenEdit}
-                variant="outline"
-                className="border-border hover:bg-secondary transition-all flex items-center gap-1.5"
-              >
-                <Edit3 className="h-4 w-4" />
-                Chỉnh sửa công việc
-              </Button>
-            </>
+
+              {/* ml-auto đẩy nhóm này về cuối hàng dù bên trái có nút hay không. */}
+              <div className="flex flex-col gap-3 sm:ml-auto sm:flex-row sm:items-center">
+                <Button
+                  onClick={handleOpenEdit}
+                  variant="outline"
+                  className="w-full sm:w-auto font-semibold"
+                >
+                  <Edit3 />
+                  Chỉnh sửa công việc
+                </Button>
+
+                {/* asChild: Button truyền style thẳng vào Link. Bản trước bọc
+                    <Link><Button className="w-full"/></Link> nên trên mobile nút
+                    kéo giãn bên trong thẻ Link co lại — full-width không ăn. */}
+                <Button asChild className="w-full font-semibold shadow-sm sm:w-auto">
+                  <Link to={`/jobs/${job.id}/proposals`}>
+                    <UserCheck />
+                    Xem đề xuất ứng tuyển
+                  </Link>
+                </Button>
+              </div>
+            </div>
           )}
 
           {/* Đối với Freelancer (Expert) */}
           {isExpert && job.status === JobStatus.Open && (
-            <Link to={`/expert/proposals/new?jobId=${job.id}`}>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-sm flex items-center gap-1.5 w-full md:w-auto">
-                <Sparkles className="h-4 w-4" />
-                Nộp proposal ứng tuyển ngay
+            <div className="flex justify-end">
+              <Button asChild className="w-full font-semibold shadow-sm sm:w-auto">
+                <Link to={`/expert/proposals/new?jobId=${job.id}`}>
+                  <Sparkles />
+                  Nộp proposal ứng tuyển ngay
+                </Link>
               </Button>
-            </Link>
+            </div>
           )}
 
           {!user && (

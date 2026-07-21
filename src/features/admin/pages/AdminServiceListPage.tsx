@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Search, Layers, Trash2, DollarSign } from "lucide-react"
 import { useToast } from "@/shared/ui/use-toast"
 import { usePrompt } from "@/shared/ui/use-confirm"
+import { UserLink } from "@/shared/components/UserLink"
 
 export const AdminServiceListPage: React.FC = () => {
   const toast = useToast()
@@ -124,7 +125,12 @@ export const AdminServiceListPage: React.FC = () => {
                     {s.title}
                   </Link>
                   <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span>Service ID: #{s.id} • Expert: #{s.expertUserId}</span>
+                    <span>Service ID: #{s.id} • Expert:</span>
+                    <UserLink
+                      userId={s.expertUserId}
+                      showAvatar
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold text-xs"
+                    />
                     <span className="flex items-center gap-0.5 font-semibold text-emerald-600">
                       <DollarSign className="h-3 w-3" /> {s.price}
                     </span>

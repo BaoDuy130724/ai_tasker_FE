@@ -7,10 +7,20 @@ import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
 import { Briefcase, DollarSign, Calendar, PlusCircle, ArrowRight } from "lucide-react"
 
+type StatusTab = "open" | "closed" | "all"
+
+const STATUS_TABS: { key: StatusTab; label: string }[] = [
+  { key: "open", label: "Đang mở" },
+  { key: "closed", label: "Đã đóng" },
+  { key: "all", label: "Tất cả" },
+]
+
 export const ClientJobListPage: React.FC = () => {
   const { user } = useAuthStore()
   const [myJobs, setMyJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  // Mặc định "Đang mở": việc đang chạy mới là thứ cần thấy ngay khi vào trang.
+  const [statusTab, setStatusTab] = useState<StatusTab>("open")
 
   const fetchMyJobs = useCallback(async () => {
     if (!user) return
@@ -42,6 +52,17 @@ export const ClientJobListPage: React.FC = () => {
     })
   }
 
+  // Lọc ở client vì danh sách job của chính mình đã nằm sẵn trong state — và còn để
+  // đếm số lượng hiển thị trên từng tab.
+  const isOpen = (j: Job) => j.status === JobStatus.Open
+  const counts = {
+    open: myJobs.filter(isOpen).length,
+    closed: myJobs.filter((j) => !isOpen(j)).length,
+    all: myJobs.length,
+  }
+  const visibleJobs =
+    statusTab === "all" ? myJobs : myJobs.filter((j) => (statusTab === "open" ? isOpen(j) : !isOpen(j)))
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -57,6 +78,28 @@ export const ClientJobListPage: React.FC = () => {
         </Link>
       </div>
 
+      {/* Tab trạng thái — job đã đóng vẫn tra cứu được, chỉ là không đứng chung
+          với việc đang chạy nữa. */}
+      {!isLoading && myJobs.length > 0 && (
+        <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatusTab(tab.key)}
+              className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                statusTab === tab.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              <span className="ml-1.5 font-normal opacity-70">({counts[tab.key]})</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
@@ -65,6 +108,16 @@ export const ClientJobListPage: React.FC = () => {
               <div className="h-3 w-1/2 rounded bg-muted" />
             </div>
           ))}
+        </div>
+      ) : myJobs.length > 0 && visibleJobs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+          <Briefcase className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <h3 className="text-lg font-bold text-foreground">
+            {statusTab === "open" ? "Không có tin nào đang mở" : "Chưa có tin nào đã đóng"}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-[300px]">
+            Chuyển sang tab khác để xem các tin tuyển dụng còn lại của bạn.
+          </p>
         </div>
       ) : myJobs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
@@ -82,7 +135,7 @@ export const ClientJobListPage: React.FC = () => {
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-          {myJobs.map((job) => (
+          {visibleJobs.map((job) => (
             <div key={job.id} className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-secondary/10 transition-all">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react"
 import { useAuthStore } from "@/features/auth/store"
 import { getJobs } from "@/features/jobs/api"
 import type { Job } from "@/features/jobs/types"
+import { JobStatus } from "@/features/jobs/types"
+import { ProjectName } from "@/shared/components/ProjectName"
 import { getProposalsByJob, getMyProposals } from "@/features/proposals/api"
 import type { Proposal } from "@/features/proposals/types"
 import { ProposalStatus } from "@/features/proposals/types"
@@ -160,7 +162,10 @@ export const DashboardPage: React.FC = () => {
   const renderClientDashboard = () => {
     const activeProjects = clientProjects.filter((p) => p.status !== ProjectStatus.Closed)
     const escrowTotal = clientProjects.reduce((sum, p) => sum + (p.escrowTotalBalance || 0), 0)
-    const recentJobs = [...clientJobs]
+    // Chỉ tin còn mở: đây là khối "việc cần để mắt tới", không phải lịch sử đăng tuyển.
+    // Tin đã đóng vẫn tra cứu được ở trang "Công việc đã đăng tuyển" (tab Đã đóng).
+    const recentJobs = clientJobs
+      .filter((j) => j.status === JobStatus.Open)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3)
     const recentProjects = [...clientProjects]
@@ -208,12 +213,16 @@ export const DashboardPage: React.FC = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <h3 className="text-lg font-bold">Công việc vừa đăng gần đây</h3>
+            <h3 className="text-lg font-bold">Tin tuyển dụng đang mở</h3>
             {recentJobs.length === 0 ? (
               <EmptyPanel
                 icon={<Briefcase className="h-10 w-10 text-muted-foreground/40" />}
-                title="Bạn chưa đăng công việc nào"
-                hint="Đăng job ngay để AI giúp bạn tối ưu hóa mô tả và kết nối tới các Expert hàng đầu."
+                title={clientJobs.length === 0 ? "Bạn chưa đăng công việc nào" : "Không còn tin nào đang mở"}
+                hint={
+                  clientJobs.length === 0
+                    ? "Đăng job ngay để AI giúp bạn tối ưu hóa mô tả và kết nối tới các Expert hàng đầu."
+                    : "Mọi tin tuyển dụng của bạn đều đã đóng. Đăng tin mới hoặc xem lại lịch sử ở mục Công việc đã đăng tuyển."
+                }
                 action={
                   <Link to="/jobs/new" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-all">
                     <PlusCircle className="h-4 w-4" />
@@ -249,7 +258,9 @@ export const DashboardPage: React.FC = () => {
                 {recentProjects.map((proj) => (
                   <Link key={proj.id} to={`/projects/${proj.id}`} className="flex items-center justify-between gap-3 py-3 hover:bg-secondary/10 -mx-2 px-2 rounded-lg transition-all">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">Dự án #{proj.id} — {proj.statusName}</p>
+                      <p className="font-semibold text-sm truncate">
+                        <ProjectName jobId={proj.jobId} serviceId={proj.serviceId} /> — {proj.statusName}
+                      </p>
                       <p className="text-xs text-muted-foreground">${proj.proposedPrice} · {formatDate(proj.createdAt)}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -341,7 +352,9 @@ export const DashboardPage: React.FC = () => {
                 {recentProposals.map((p) => (
                   <Link key={p.id} to={`/jobs/${p.jobId}`} className="flex items-center justify-between gap-3 py-3 hover:bg-secondary/10 -mx-2 px-2 rounded-lg transition-all">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">Job #{p.jobId} · ${p.proposedPrice}</p>
+                      <p className="font-semibold text-sm truncate">
+                        <ProjectName jobId={p.jobId} /> · ${p.proposedPrice}
+                      </p>
                       <p className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -364,7 +377,9 @@ export const DashboardPage: React.FC = () => {
                 {recentProjects.map((proj) => (
                   <Link key={proj.id} to={`/projects/${proj.id}`} className="flex items-center justify-between gap-3 py-3 hover:bg-secondary/10 -mx-2 px-2 rounded-lg transition-all">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">Dự án #{proj.id} — {proj.statusName}</p>
+                      <p className="font-semibold text-sm truncate">
+                        <ProjectName jobId={proj.jobId} serviceId={proj.serviceId} /> — {proj.statusName}
+                      </p>
                       <p className="text-xs text-muted-foreground">${proj.proposedPrice} · {formatDate(proj.createdAt)}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />

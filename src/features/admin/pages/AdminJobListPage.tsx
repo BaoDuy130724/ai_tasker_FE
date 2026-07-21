@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Search, Briefcase, Trash2 } from "lucide-react"
 import { useToast } from "@/shared/ui/use-toast"
 import { usePrompt } from "@/shared/ui/use-confirm"
+import { UserLink } from "@/shared/components/UserLink"
 
 export const AdminJobListPage: React.FC = () => {
   const toast = useToast()
@@ -128,7 +129,14 @@ export const AdminJobListPage: React.FC = () => {
                       {j.status}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Job ID: #{j.id} • Chủ sở hữu: #{j.ownerUserId}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <span>Job ID: #{j.id} • Chủ sở hữu:</span>
+                    <UserLink
+                      userId={j.ownerUserId}
+                      showAvatar
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold text-xs"
+                    />
+                  </p>
                 </div>
 
                 <Button

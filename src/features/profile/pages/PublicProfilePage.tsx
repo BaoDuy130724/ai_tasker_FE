@@ -55,7 +55,7 @@ export const PublicProfilePage: React.FC = () => {
       <div className="max-w-3xl mx-auto flex flex-col items-center justify-center py-20 text-center bg-card border border-border rounded-xl">
         <UserIcon className="h-10 w-10 text-muted-foreground/40 mb-3" />
         <h3 className="text-lg font-bold text-foreground">Không tìm thấy hồ sơ</h3>
-        <p className="text-sm text-muted-foreground mt-1">Người dùng #{userId} chưa có hồ sơ hoặc không tồn tại.</p>
+        <p className="text-sm text-muted-foreground mt-1">Người dùng này chưa có hồ sơ hoặc không tồn tại.</p>
       </div>
     )
   }
