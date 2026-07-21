@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Search, ShieldAlert, Lock, Unlock } from "lucide-react"
 import { useToast } from "@/shared/ui/use-toast"
 import { useConfirm } from "@/shared/ui/use-confirm"
+import { useAuthStore } from "@/features/auth/store"
 
 export const AdminUserListPage: React.FC = () => {
   const toast = useToast()
   const confirm = useConfirm()
+  const { user: currentUser } = useAuthStore()
+  const myId = currentUser ? Number(currentUser.id) : 0
   const [users, setUsers] = useState<AdminUser[]>([])
   const [isLoading, setIsLoading] = useState(false)
   // Ô tìm kiếm đang GÕ — không tự gọi API.
@@ -144,33 +147,46 @@ export const AdminUserListPage: React.FC = () => {
                         Đang khóa
                       </span>
                     )}
+                    {u.id === myId && (
+                      <span className="inline-flex rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-bold">
+                        Bạn
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">Email: {u.email} • ID: #{u.id}</p>
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                  <Button
-                    onClick={() => handleToggleLock(u.id, u.isLocked)}
-                    variant="outline"
-                    size="sm"
-                    className={`w-full md:w-auto text-xs font-semibold flex items-center gap-1 border-border ${
-                      u.isLocked
-                        ? "text-emerald-600 hover:bg-emerald-50"
-                        : "text-destructive hover:bg-destructive/5"
-                    }`}
-                  >
-                    {u.isLocked ? (
-                      <>
-                        <Unlock className="h-3.5 w-3.5" />
-                        Mở khóa
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="h-3.5 w-3.5" />
-                        Khóa tài khoản
-                      </>
-                    )}
-                  </Button>
+                  {/* Không cho tự khoá mình: khoá xong là mất luôn quyền vào mở khoá,
+                      chỉ còn cách sửa tay dưới database. BE cũng đã chặn (SetUserLockCommand). */}
+                  {u.id === myId ? (
+                    <span className="w-full md:w-auto text-xs text-muted-foreground italic px-2">
+                      Không thể tự khoá tài khoản của mình
+                    </span>
+                  ) : (
+                    <Button
+                      onClick={() => handleToggleLock(u.id, u.isLocked)}
+                      variant="outline"
+                      size="sm"
+                      className={`w-full md:w-auto text-xs font-semibold flex items-center gap-1 border-border ${
+                        u.isLocked
+                          ? "text-emerald-600 hover:bg-emerald-50"
+                          : "text-destructive hover:bg-destructive/5"
+                      }`}
+                    >
+                      {u.isLocked ? (
+                        <>
+                          <Unlock className="h-3.5 w-3.5" />
+                          Mở khóa
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-3.5 w-3.5" />
+                          Khóa tài khoản
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

@@ -411,12 +411,31 @@ export const DashboardPage: React.FC = () => {
   }
 
   // Render Dashboard của Admin
-  const renderAdminDashboard = () => (
+  const renderAdminDashboard = () => {
+    // KPI đọc từ read-model, chỉ được ghi khi bấm "Đồng bộ gRPC". Chưa đồng bộ lần nào
+    // thì BE trả GeneratedAt = DateTime.MinValue kèm toàn số 0 — đó là giá trị mặc định,
+    // KHÔNG phải số liệu thật. Hiển thị 0 lúc này là nói dối người quản trị.
+    const syncedAt = kpi?.generatedAt ? new Date(kpi.generatedAt) : null
+    const isSynced = Boolean(syncedAt && !isNaN(syncedAt.getTime()) && syncedAt.getFullYear() > 1)
+    const kpiValue = (n: number | undefined) => (isSynced ? n ?? "—" : "—")
+
+    return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Admin Portal</h1>
           <p className="text-muted-foreground mt-1">Giám sát hoạt động và quản lý hệ thống AI Tasker.</p>
+          <p className="text-xs mt-1.5">
+            {isSynced ? (
+              <span className="text-muted-foreground">
+                Số liệu tính đến {syncedAt!.toLocaleString("vi-VN")}
+              </span>
+            ) : (
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                Chưa đồng bộ lần nào — bấm "Đồng bộ gRPC" để lấy số liệu thật.
+              </span>
+            )}
+          </p>
         </div>
         <Button
           onClick={handleRefreshKpi}
@@ -438,20 +457,20 @@ export const DashboardPage: React.FC = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiTile
             label="Tổng số Users"
-            value={kpi?.totalUsers ?? "—"}
-            hint="Client / Expert"
+            value={kpiValue(kpi?.totalUsers)}
+            hint={isSynced ? "Client / Expert" : "chưa đồng bộ"}
             icon={<Users className="h-5 w-5 text-primary" />}
           />
           <KpiTile
             label="Tổng số Jobs"
-            value={kpi?.totalJobs ?? "—"}
-            hint="đang hoạt động"
+            value={kpiValue(kpi?.totalJobs)}
+            hint={isSynced ? "đang hoạt động" : "chưa đồng bộ"}
             icon={<Briefcase className="h-5 w-5 text-indigo-500" />}
           />
           <KpiTile
             label="Tổng dịch vụ AI"
-            value={kpi?.totalServices ?? "—"}
-            hint="trên marketplace"
+            value={kpiValue(kpi?.totalServices)}
+            hint={isSynced ? "trên marketplace" : "chưa đồng bộ"}
             icon={<Layers className="h-5 w-5 text-purple-500" />}
           />
           <KpiTile
@@ -481,7 +500,8 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
     </div>
-  )
+    )
+  }
 
   switch (user.role) {
     case "Client":

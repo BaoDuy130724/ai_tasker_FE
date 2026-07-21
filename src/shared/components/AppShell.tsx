@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
 import { useNotificationStore } from "@/features/notifications/store"
 import { AiAssistantSidebar } from "./AiAssistantSidebar"
+import { ChatBubble } from "@/features/messaging/components/ChatBubble"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { identityApi } from "@/shared/api/client"
@@ -10,7 +11,6 @@ import {
   LayoutDashboard,
   Briefcase,
   FileText,
-  MessageSquare,
   Bell,
   User,
   LogOut,
@@ -34,6 +34,22 @@ export const AppShell: React.FC = () => {
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAiOpen, setIsAiOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+
+  // Hai panel nổi cùng neo góc phải nên chỉ cho phép mở một cái tại một thời điểm,
+  // tránh chúng đè lên nhau.
+  const openAi = (next: boolean) => {
+    setIsAiOpen(next)
+    if (next) setIsChatOpen(false)
+  }
+  const openChat = (next: boolean) => {
+    setIsChatOpen(next)
+    if (next) setIsAiOpen(false)
+  }
+
+  // Trang /messages đã là giao diện chat đầy đủ. Hiện thêm bubble ở đó sẽ tạo
+  // hai kết nối SignalR cùng join một session → tin nhắn xử lý hai lần.
+  const showChatBubble = Boolean(user) && location.pathname !== "/messages"
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
@@ -93,9 +109,10 @@ export const AppShell: React.FC = () => {
   const getNavigationLinks = () => {
     if (!user) return []
 
+    // "Tin nhắn" đã chuyển thành bubble nổi (ChatBubble) nên không còn trong sidebar.
+    // Route /messages vẫn giữ cho các link cũ / thông báo trỏ tới.
     const commonLinks = [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/messages", label: "Tin nhắn", icon: MessageSquare },
     ]
 
     switch (user.role) {
@@ -234,9 +251,18 @@ export const AppShell: React.FC = () => {
               <Outlet />
             </ErrorBoundary>
             
+            {/* Floating Chat Bubble — thay cho mục "Tin nhắn" trong sidebar */}
+            {showChatBubble && (
+              <ChatBubble
+                isOpen={isChatOpen}
+                onToggle={() => openChat(!isChatOpen)}
+                onClose={() => openChat(false)}
+              />
+            )}
+
             {/* Floating AI Assistant Bubble */}
             <button
-              onClick={() => setIsAiOpen(!isAiOpen)}
+              onClick={() => openAi(!isAiOpen)}
               className={`fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 z-50 border ${
                 isAiOpen 
                   ? "bg-secondary text-foreground border-border hover:bg-secondary/90" 

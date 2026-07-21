@@ -1,12 +1,9 @@
-import React, { useEffect, useState, useRef, useCallback } from "react"
+import React, { useRef } from "react"
 import { useSearchParams } from "react-router-dom"
-import { useAuthStore } from "@/features/auth/store"
-import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead, sendMessageAttachment } from "../api"
-import type { ChatSession, ChatMessage } from "../types"
-import * as signalR from "@microsoft/signalr"
+import { useChat, useMessagesEndRef } from "../useChat"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Send, User, Clock, CheckCircle, Paperclip, FileText, Download } from "lucide-react"
-import { useToast } from "@/shared/ui/use-toast"
+import { UserLink } from "@/shared/components/UserLink"
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
@@ -15,180 +12,27 @@ const formatFileSize = (bytes: number) => {
 }
 
 export const ChatPage: React.FC = () => {
-  const toast = useToast()
-  const { user, accessToken } = useAuthStore()
   const [searchParams] = useSearchParams()
   const targetExpertId = searchParams.get("expertId")
 
-  const [sessions, setSessions] = useState<ChatSession[]>([])
-  const [activeSession, setActiveSession] = useState<ChatSession | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputText, setInputText] = useState("")
-  const [hubConnection, setHubConnection] = useState<signalR.HubConnection | null>(null)
-  const [isSendingAttachment, setIsSendingAttachment] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  // Logic dùng chung với ChatBubble — xem features/messaging/useChat.ts
+  const {
+    myId,
+    sessions,
+    activeSession,
+    setActiveSession,
+    messages,
+    inputText,
+    setInputText,
+    isSendingAttachment,
+    sendMessage: handleSendMessage,
+    sendAttachment: handleAttachmentSelected,
+    getPartnerId,
+  } = useChat(targetExpertId)
+
+  const messagesEndRef = useMessagesEndRef(messages)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const myId = user ? Number(user.id) : 0
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  // 1. Fetch sessions & Khởi tạo session mới nếu có targetExpertId
-  const loadSessions = useCallback(async () => {
-    if (!user) return
-    try {
-      const userId = Number(user.id)
-      let activeList = await getUserSessions(userId)
-
-      // Nếu Client click "Chat" với Expert từ trang nào đó (truyền targetExpertId)
-      if (targetExpertId && user.role === "Client") {
-        const expertId = Number(targetExpertId)
-        // Check xem đã có session chưa
-        let existing = activeList.find(s => s.expertId === expertId && s.clientId === userId)
-
-        if (!existing) {
-          // Tạo session mới
-          existing = await getOrCreateSession({
-            clientId: userId,
-            expertId: expertId,
-            jobId: null,
-          })
-          // Reload lại list
-          activeList = await getUserSessions(userId)
-        }
-        
-        if (existing) {
-          setActiveSession(existing)
-        }
-      } else if (activeList.length > 0) {
-        // Mặc định chọn session đầu tiên NẾU chưa có session nào đang mở.
-        // Dùng functional update để không phải đọc `activeSession` trong callback:
-        // đưa nó vào dependency sẽ khiến effect chạy lại mỗi lần user đổi session.
-        setActiveSession((prev) => prev ?? activeList[0])
-      }
-      
-      setSessions(activeList)
-    } catch (err) {
-      console.error("Lỗi fetch sessions:", err)
-    }
-  }, [user, targetExpertId])
-
-  useEffect(() => {
-    loadSessions()
-  }, [loadSessions])
-
-  // 2. Tải lịch sử chat khi chọn session + đánh dấu đã đọc
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (!activeSession) return
-      try {
-        const history = await getChatHistory(activeSession.id)
-        setMessages(history.reverse()) // API có thể trả về sắp xếp ngược
-      } catch (err) {
-        console.error("Lỗi tải lịch sử chat:", err)
-      }
-    }
-    fetchHistory()
-
-    if (activeSession && myId) {
-      markSessionAsRead(activeSession.id, myId).catch((err) =>
-        console.error("Lỗi đánh dấu đã đọc:", err)
-      )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession])
-
-  // 3. Kết nối SignalR Chat Hub
-  useEffect(() => {
-    if (!accessToken || !activeSession) return
-
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5200/hubs/chat", {
-        accessTokenFactory: () => accessToken,
-      })
-      .withAutomaticReconnect()
-      .build()
-
-    connection
-      .start()
-      .then(() => {
-        console.log("Đã kết nối thành công tới Chat Hub!")
-        // Join vào group chat của session hiện tại
-        connection.invoke("JoinSession", activeSession.id)
-        setHubConnection(connection)
-      })
-      .catch((err) => {
-        console.error("Lỗi kết nối Chat Hub:", err)
-      })
-
-    // Lắng nghe tin nhắn mới từ Hub
-    connection.on("ReceiveMessage", (message: ChatMessage) => {
-      setMessages((prev) => {
-        // Tránh trùng lặp tin nhắn
-        if (prev.some((m) => m.id === message.id)) return prev
-        return [...prev, message]
-      })
-    })
-
-    return () => {
-      if (connection) {
-        connection.invoke("LeaveSession", activeSession.id).catch(console.error)
-        connection.stop()
-      }
-    }
-  }, [activeSession, accessToken])
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputText.trim() || !activeSession || !hubConnection || !user) return
-
-    const messageDto = {
-      sessionId: activeSession.id,
-      senderId: myId,
-      content: inputText.trim(),
-    }
-
-    try {
-      // Gọi qua SignalR invoke SendMessage
-      await hubConnection.invoke("SendMessage", messageDto)
-      setInputText("")
-    } catch (err) {
-      console.error("Lỗi gửi tin nhắn qua SignalR:", err)
-      toast.error("Không gửi được tin nhắn.", "Vui lòng kiểm tra lại kết nối.")
-    }
-  }
-
-  const handleAttachmentSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !activeSession || !myId) return
-    setIsSendingAttachment(true)
-    try {
-      const message = await sendMessageAttachment(activeSession.id, myId, file)
-      // Đường REST đính kèm không broadcast qua SignalR (chỉ hub "SendMessage" mới làm việc đó) —
-      // tự thêm vào state để người gửi thấy ngay; phía kia chỉ thấy khi load lại lịch sử (gap BE).
-      if (message) {
-        setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]))
-      }
-    } catch (err) {
-      console.error("Lỗi gửi file đính kèm:", err)
-      toast.error("Gửi file đính kèm thất bại.", "Kiểm tra lại dung lượng file (tối đa 10MB).")
-    } finally {
-      setIsSendingAttachment(false)
-      e.target.value = ""
-    }
-  }
-
-  const getPartnerLabel = (session: ChatSession) => {
-    const isClientRole = user?.role === "Client"
-    const partnerId = isClientRole ? session.expertId : session.clientId
-    return `Đối tác #${partnerId}`
-  }
 
   return (
     <div className="max-w-5xl mx-auto h-[600px] bg-card border border-border rounded-xl shadow-sm overflow-hidden flex">
@@ -219,7 +63,10 @@ export const ChatPage: React.FC = () => {
                 >
                   <div className="flex justify-between items-start">
                     <span className="font-bold text-xs text-foreground block truncate">
-                      {getPartnerLabel(s)}
+                      <UserLink
+                        userId={getPartnerId(s)}
+                        className="pointer-events-none font-bold text-foreground"
+                      />
                     </span>
                     <span className="text-[9px] text-muted-foreground">
                       {s.lastMessage ? new Date(s.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
@@ -246,7 +93,12 @@ export const ChatPage: React.FC = () => {
                   <User className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-foreground">{getPartnerLabel(activeSession)}</h3>
+                  <h3 className="font-bold text-sm text-foreground">
+                    <UserLink
+                      userId={getPartnerId(activeSession)}
+                      className="font-bold text-foreground hover:underline"
+                    />
+                  </h3>
                   <span className="text-[10px] text-emerald-500 flex items-center gap-0.5">
                     <CheckCircle className="h-3 w-3 fill-emerald-500 text-white" />
                     Đã kết nối Realtime
