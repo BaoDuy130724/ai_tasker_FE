@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 import { getJobById } from "@/features/jobs/api"
 import type { Job } from "@/features/jobs/types"
 import { getProposalsByJob } from "../api"
@@ -31,7 +31,7 @@ export const JobProposalsPage: React.FC = () => {
   // nên hiện ngay trong modal thay vì chỉ lấy project.id rồi bỏ qua toàn bộ object Contract.
   const [approvedContract, setApprovedContract] = useState<{ contract: Contract; projectId: number } | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!jobId) return
     setIsLoading(true)
     setErrorMsg(null)
@@ -48,11 +48,11 @@ export const JobProposalsPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [jobId])
 
   useEffect(() => {
     fetchData()
-  }, [jobId])
+  }, [fetchData])
 
   const handleApprove = async (proposalId: number) => {
     const ok = await confirm({

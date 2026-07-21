@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
 import { getServices, deleteService } from "../api"
 import type { AiService } from "../types"
 import { Button } from "@/components/ui/button"
 import { Layers, DollarSign, Clock, PlusCircle, Trash2, Pencil } from "lucide-react"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 
 export const ExpertServiceListPage: React.FC = () => {
   const { user } = useAuthStore()
@@ -15,7 +15,7 @@ export const ExpertServiceListPage: React.FC = () => {
   const [myServices, setMyServices] = useState<AiService[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const fetchMyServices = async () => {
+  const fetchMyServices = useCallback(async () => {
     if (!user) return
     setIsLoading(true)
     try {
@@ -30,11 +30,11 @@ export const ExpertServiceListPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchMyServices()
-  }, [user])
+  }, [fetchMyServices])
 
   const handleDelete = async (id: number) => {
     const ok = await confirm({

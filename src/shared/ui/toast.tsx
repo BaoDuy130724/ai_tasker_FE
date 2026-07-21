@@ -1,7 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react"
-
-export type ToastVariant = "success" | "error" | "info"
+import { ToastContext, type ToastApi, type ToastVariant } from "./use-toast"
 
 export interface ToastOptions {
   title: string
@@ -15,14 +14,6 @@ interface ToastItem extends ToastOptions {
   id: number
   variant: ToastVariant
 }
-
-interface ToastApi {
-  success: (title: string, description?: string) => void
-  error: (title: string, description?: string) => void
-  info: (title: string, description?: string) => void
-}
-
-const ToastContext = createContext<ToastApi | null>(null)
 
 /** Tối đa 4 toast cùng lúc — nhiều hơn là spam, đẩy toast cũ nhất ra. */
 const MAX_TOASTS = 4
@@ -150,10 +141,4 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       </div>
     </ToastContext.Provider>
   )
-}
-
-export const useToast = (): ToastApi => {
-  const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error("useToast phải nằm trong <ToastProvider>")
-  return ctx
 }

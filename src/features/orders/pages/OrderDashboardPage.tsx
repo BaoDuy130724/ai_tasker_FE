@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
 import { getProjects } from "@/features/contracts-projects/api"
@@ -36,7 +36,7 @@ export const OrderDashboardPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!user) return
     setIsLoading(true)
     try {
@@ -47,11 +47,11 @@ export const OrderDashboardPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchOrders()
-  }, [user])
+  }, [fetchOrders])
 
   const isClient = user && user.role === "Client"
 

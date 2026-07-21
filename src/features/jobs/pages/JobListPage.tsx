@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { getJobs } from "../api"
 import type { PagedResult } from "../api"
@@ -11,22 +11,32 @@ export const JobListPage: React.FC = () => {
   const [jobsData, setJobsData] = useState<PagedResult<Job> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   
-  // Filter states
+  // Filter đang GÕ — chỉ là nội dung ô input, không tự kích hoạt gọi API.
   const [skillFilter, setSkillFilter] = useState("")
   const [minBudget, setMinBudget] = useState<number | undefined>(undefined)
   const [maxBudget, setMaxBudget] = useState<number | undefined>(undefined)
+
+  // Filter ĐÃ ÁP DỤNG — chỉ đổi khi bấm "Tìm kiếm", và đây mới là thứ effect phụ thuộc.
+  // Tách 2 nhóm để dependency của useEffect khai báo đúng sự thật mà hành vi vẫn là
+  // "lọc theo submit". Trước đây gộp làm một nên phải cố ý bỏ dep -> lint cảnh báo.
+  const [appliedFilters, setAppliedFilters] = useState<{
+    skill: string
+    minBudget?: number
+    maxBudget?: number
+  }>({ skill: "", minBudget: undefined, maxBudget: undefined })
+
   const [sortBy, setSortBy] = useState("createdAt")
   const [descending, setDescending] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize] = useState(6)
 
-  const fetchJobsList = async () => {
+  const fetchJobsList = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await getJobs({
-        skill: skillFilter || undefined,
-        minBudget,
-        maxBudget,
+        skill: appliedFilters.skill || undefined,
+        minBudget: appliedFilters.minBudget,
+        maxBudget: appliedFilters.maxBudget,
         status: JobStatus.Open, // Chỉ lấy Job đang mở ứng tuyển
         sortBy,
         descending,
@@ -39,16 +49,18 @@ export const JobListPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [appliedFilters, sortBy, descending, page, pageSize])
 
   useEffect(() => {
     fetchJobsList()
-  }, [page, sortBy, descending])
+  }, [fetchJobsList])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    // Chỉ set state; effect tự chạy lại. Bản cũ gọi thẳng fetchJobsList() ngay sau setPage(1)
+    // nên request vẫn mang `page` CŨ (setState bất đồng bộ) — tìm kiếm từ trang 2 trở đi bị sai trang.
     setPage(1)
-    fetchJobsList()
+    setAppliedFilters({ skill: skillFilter, minBudget, maxBudget })
   }
 
   const formatDate = (dateStr: string) => {

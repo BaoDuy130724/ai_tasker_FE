@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 import {
   User as UserIcon,
   Camera,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, useCallback } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
 import { getOrCreateSession, getUserSessions, getChatHistory, markSessionAsRead, sendMessageAttachment } from "../api"
@@ -6,7 +6,7 @@ import type { ChatSession, ChatMessage } from "../types"
 import * as signalR from "@microsoft/signalr"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Send, User, Clock, CheckCircle, Paperclip, FileText, Download } from "lucide-react"
-import { useToast } from "@/shared/ui/toast"
+import { useToast } from "@/shared/ui/use-toast"
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
@@ -40,7 +40,7 @@ export const ChatPage: React.FC = () => {
   }, [messages])
 
   // 1. Fetch sessions & Khởi tạo session mới nếu có targetExpertId
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     if (!user) return
     try {
       const userId = Number(user.id)
@@ -66,20 +66,22 @@ export const ChatPage: React.FC = () => {
         if (existing) {
           setActiveSession(existing)
         }
-      } else if (activeList.length > 0 && !activeSession) {
-        // Mặc định chọn session đầu tiên
-        setActiveSession(activeList[0])
+      } else if (activeList.length > 0) {
+        // Mặc định chọn session đầu tiên NẾU chưa có session nào đang mở.
+        // Dùng functional update để không phải đọc `activeSession` trong callback:
+        // đưa nó vào dependency sẽ khiến effect chạy lại mỗi lần user đổi session.
+        setActiveSession((prev) => prev ?? activeList[0])
       }
       
       setSessions(activeList)
     } catch (err) {
       console.error("Lỗi fetch sessions:", err)
     }
-  }
+  }, [user, targetExpertId])
 
   useEffect(() => {
     loadSessions()
-  }, [user, targetExpertId])
+  }, [loadSessions])
 
   // 2. Tải lịch sử chat khi chọn session + đánh dấu đã đọc
   useEffect(() => {

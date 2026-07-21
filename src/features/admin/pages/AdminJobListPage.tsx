@@ -4,8 +4,8 @@ import { getAdminJobs, removeAdminJob } from "../api"
 import type { AdminJob } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, Briefcase, Trash2 } from "lucide-react"
-import { useToast } from "@/shared/ui/toast"
-import { usePrompt } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { usePrompt } from "@/shared/ui/use-confirm"
 
 export const AdminJobListPage: React.FC = () => {
   const toast = useToast()

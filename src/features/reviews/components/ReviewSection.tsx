@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { createReview, createReply, getReviewsByProject } from "../api"
 import type { Review } from "../types"
 import { UserLink } from "@/shared/components/UserLink"
-import { useToast } from "@/shared/ui/toast"
+import { useToast } from "@/shared/ui/use-toast"
 
 interface ReviewSectionProps {
   /** Project.id (int) — Review service dùng đúng int này làm projectId (không map Guid). */

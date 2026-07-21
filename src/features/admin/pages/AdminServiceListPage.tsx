@@ -4,8 +4,8 @@ import { getAdminServices, removeAdminService } from "../api"
 import type { AdminService } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, Layers, Trash2, DollarSign } from "lucide-react"
-import { useToast } from "@/shared/ui/toast"
-import { usePrompt } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { usePrompt } from "@/shared/ui/use-confirm"
 
 export const AdminServiceListPage: React.FC = () => {
   const toast = useToast()

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { getJobs } from "../api"
 import type { Job } from "../types"
@@ -12,7 +12,7 @@ export const ClientJobListPage: React.FC = () => {
   const [myJobs, setMyJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const fetchMyJobs = async () => {
+  const fetchMyJobs = useCallback(async () => {
     if (!user) return
     setIsLoading(true)
     try {
@@ -28,11 +28,11 @@ export const ClientJobListPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchMyJobs()
-  }, [user])
+  }, [fetchMyJobs])
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("vi-VN", {

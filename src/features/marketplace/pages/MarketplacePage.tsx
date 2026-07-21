@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { getServices, getCategories } from "../api"
 import type { AiService, Category } from "../types"
@@ -12,33 +12,43 @@ export const MarketplacePage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Filter & Search states
+  // Filter đang GÕ — nội dung ô input, không tự kích hoạt gọi API.
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined)
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined)
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
+
+  // Filter ĐÃ ÁP DỤNG — chỉ đổi khi bấm "Tìm kiếm"; đây mới là thứ effect phụ thuộc.
+  // Tách 2 nhóm để dependency khai báo đúng sự thật mà hành vi vẫn là "lọc theo submit".
+  const [appliedFilters, setAppliedFilters] = useState<{
+    searchTerm: string
+    minPrice?: number
+    maxPrice?: number
+  }>({ searchTerm: "", minPrice: undefined, maxPrice: undefined })
+
+  // Category đổi là fetch ngay (bấm 1 phát ra kết quả luôn) nên để riêng, không gộp vào applied.
+  const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined)
   const [sortBy, setSortBy] = useState("createdAt")
   const [isDescending, setIsDescending] = useState(true)
   const [pageIndex, setPageIndex] = useState(1)
   const [pageSize] = useState(6)
 
-  const fetchCategoriesList = async () => {
+  const fetchCategoriesList = useCallback(async () => {
     try {
       const data = await getCategories()
       setCategories(data)
     } catch (err) {
       console.error("Lỗi fetch categories:", err)
     }
-  }
+  }, [])
 
-  const fetchServicesList = async () => {
+  const fetchServicesList = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await getServices({
-        searchTerm: searchTerm || undefined,
+        searchTerm: appliedFilters.searchTerm || undefined,
         categoryId: selectedCategory,
-        minPrice,
-        maxPrice,
+        minPrice: appliedFilters.minPrice,
+        maxPrice: appliedFilters.maxPrice,
         sortBy,
         isDescending,
         pageIndex,
@@ -53,20 +63,22 @@ export const MarketplacePage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [appliedFilters, selectedCategory, sortBy, isDescending, pageIndex, pageSize])
 
   useEffect(() => {
     fetchCategoriesList()
-  }, [])
+  }, [fetchCategoriesList])
 
   useEffect(() => {
     fetchServicesList()
-  }, [pageIndex, sortBy, isDescending, selectedCategory])
+  }, [fetchServicesList])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    // Chỉ set state; effect tự chạy lại. Bản cũ gọi thẳng fetchServicesList() ngay sau
+    // setPageIndex(1) nên request vẫn mang pageIndex CŨ (setState bất đồng bộ).
     setPageIndex(1)
-    fetchServicesList()
+    setAppliedFilters({ searchTerm, minPrice, maxPrice })
   }
 
   return (

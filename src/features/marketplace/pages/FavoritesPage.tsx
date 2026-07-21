@@ -4,7 +4,7 @@ import { getFavorites, removeFavorite } from "../api"
 import type { Favorite } from "../types"
 import { Heart, DollarSign, Clock, Star, Layers } from "lucide-react"
 import { UserLink } from "@/shared/components/UserLink"
-import { useToast } from "@/shared/ui/toast"
+import { useToast } from "@/shared/ui/use-toast"
 
 export const FavoritesPage: React.FC = () => {
   const toast = useToast()

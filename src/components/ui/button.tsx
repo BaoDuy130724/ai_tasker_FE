@@ -53,4 +53,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 Button.displayName = "Button"
 
-export { Button, buttonVariants }
+// `buttonVariants` cố ý KHÔNG export: không nơi nào trong app dùng tới, mà export thêm
+// một non-component từ file component sẽ làm hỏng Fast Refresh của Vite.
+// Cần dùng lại ở nơi khác thì tách nó ra file riêng (VD: button-variants.ts).
+export { Button }

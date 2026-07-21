@@ -12,6 +12,8 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   error: Error | null
+  /** resetKey của lượt render trước, để phát hiện điều hướng mà không cần componentDidUpdate. */
+  lastResetKey?: string
 }
 
 /**
@@ -21,19 +23,29 @@ interface ErrorBoundaryState {
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { error: null }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Pick<ErrorBoundaryState, "error"> {
     return { error }
+  }
+
+  /**
+   * Điều hướng sang route khác thì bỏ trạng thái lỗi cũ đi.
+   *
+   * Làm ở đây chứ KHÔNG ở componentDidUpdate: setState trong componentDidUpdate gây thêm
+   * một lượt render nữa (React cảnh báo no-did-update-set-state). getDerivedStateFromProps
+   * chạy TRƯỚC render nên trạng thái đã đúng ngay từ lượt đầu.
+   */
+  static getDerivedStateFromProps(
+    props: ErrorBoundaryProps,
+    state: ErrorBoundaryState
+  ): Partial<ErrorBoundaryState> | null {
+    if (state.lastResetKey !== props.resetKey) {
+      return { error: null, lastResetKey: props.resetKey }
+    }
+    return null
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(`[ErrorBoundary${this.props.scope ? ` · ${this.props.scope}` : ""}]`, error, info.componentStack)
-  }
-
-  componentDidUpdate(prevProps: ErrorBoundaryProps) {
-    // Điều hướng sang route khác thì bỏ trạng thái lỗi cũ đi.
-    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ error: null })
-    }
   }
 
   private handleRetry = () => this.setState({ error: null })

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 import { useAuthStore } from "@/features/auth/store"
 import {
   getProjectById,
@@ -82,7 +82,7 @@ export const ProjectDetailPage: React.FC = () => {
     return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
   }
 
-  const fetchProjectDetails = async () => {
+  const fetchProjectDetails = useCallback(async () => {
     if (!id) return
     setIsLoading(true)
     setErrorMsg(null)
@@ -110,11 +110,11 @@ export const ProjectDetailPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [id])
 
   useEffect(() => {
     fetchProjectDetails()
-  }, [id])
+  }, [fetchProjectDetails])
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault()

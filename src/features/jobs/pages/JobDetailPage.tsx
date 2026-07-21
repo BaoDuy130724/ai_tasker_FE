@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 import { getJobById, closeJob, updateJob } from "../api"
 import type { Job } from "../types"
 import { JobStatus } from "../types"
@@ -27,7 +27,7 @@ export const JobDetailPage: React.FC = () => {
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editForm, setEditForm] = useState({ title: "", description: "", budget: 0, deadline: "", skillsText: "" })
 
-  const fetchJobDetail = async () => {
+  const fetchJobDetail = useCallback(async () => {
     if (!id) return
     setIsLoading(true)
     setErrorMsg(null)
@@ -40,11 +40,11 @@ export const JobDetailPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [id])
 
   useEffect(() => {
     fetchJobDetail()
-  }, [id])
+  }, [fetchJobDetail])
 
   const handleCloseJob = async () => {
     if (!job || !user) return

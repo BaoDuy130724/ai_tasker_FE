@@ -1,28 +1,31 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { getUsers, lockUser } from "../api"
 import type { AdminUser } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, ShieldAlert, Lock, Unlock } from "lucide-react"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 
 export const AdminUserListPage: React.FC = () => {
   const toast = useToast()
   const confirm = useConfirm()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  // Ô tìm kiếm đang GÕ — không tự gọi API.
   const [searchTerm, setSearchTerm] = useState("")
+  // Từ khoá ĐÃ ÁP DỤNG — chỉ đổi khi submit; đây mới là thứ effect phụ thuộc.
+  const [appliedKeyword, setAppliedKeyword] = useState("")
   const [selectedRole, setSelectedRole] = useState("")
   
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [pageSize] = useState(10)
 
-  const fetchUsersList = async () => {
+  const fetchUsersList = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await getUsers({
-        keyword: searchTerm || undefined,
+        keyword: appliedKeyword || undefined,
         role: selectedRole || undefined,
         page,
         pageSize,
@@ -36,16 +39,18 @@ export const AdminUserListPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [appliedKeyword, selectedRole, page, pageSize])
 
   useEffect(() => {
     fetchUsersList()
-  }, [page, selectedRole])
+  }, [fetchUsersList])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    // Chỉ set state; effect tự chạy lại. Bản cũ gọi thẳng fetchUsersList() ngay sau setPage(1)
+    // nên request vẫn mang `page` CŨ (setState bất đồng bộ).
     setPage(1)
-    fetchUsersList()
+    setAppliedKeyword(searchTerm)
   }
 
   const handleToggleLock = async (id: number, currentLockStatus: boolean) => {

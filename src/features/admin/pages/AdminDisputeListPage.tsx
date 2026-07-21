@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { getDisputes, resolveDispute } from "@/features/contracts-projects/api"
 import type { Dispute } from "@/features/contracts-projects/api"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, ExternalLink, AlertTriangle, Scale } from "lucide-react"
-import { useToast } from "@/shared/ui/toast"
-import { useConfirm } from "@/shared/ui/confirm-dialog"
+import { useToast } from "@/shared/ui/use-toast"
+import { useConfirm } from "@/shared/ui/use-confirm"
 
 export const AdminDisputeListPage: React.FC = () => {
   const toast = useToast()
@@ -14,7 +14,7 @@ export const AdminDisputeListPage: React.FC = () => {
   const [projectIdFilter, setProjectIdFilter] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("")
 
-  const fetchDisputesList = async () => {
+  const fetchDisputesList = useCallback(async () => {
     setIsLoading(true)
     try {
       // getDisputes accepts optional projectId filter
@@ -33,11 +33,11 @@ export const AdminDisputeListPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [projectIdFilter, selectedStatus])
 
   useEffect(() => {
     fetchDisputesList()
-  }, [projectIdFilter, selectedStatus])
+  }, [fetchDisputesList])
 
   const handleResolve = async (disputeId: number, resolution: number) => {
     const resolutionText = resolution === 0 ? "Hoàn tiền cho Client" : "Giải ngân cho Expert"

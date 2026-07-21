@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
-import { useToast } from "@/shared/ui/toast"
+import { useToast } from "@/shared/ui/use-toast"
 import { getServiceById, getFavorites, addFavorite, removeFavorite } from "../api"
 import type { AiService } from "../types"
 import { useAuthStore } from "@/features/auth/store"
