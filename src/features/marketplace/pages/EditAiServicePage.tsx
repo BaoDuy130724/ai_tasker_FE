@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate, useParams } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useToast } from "@/shared/ui/toast"
 import { getServiceById, updateService, getCategories } from "../api"
 import type { Category } from "../types"
 import { Button } from "@/components/ui/button"
@@ -24,6 +26,8 @@ type ServiceFormValues = z.infer<typeof serviceSchema>
 
 export const EditAiServicePage: React.FC = () => {
   const navigate = useNavigate()
+  const goBack = useSafeBack()
+  const toast = useToast()
   const { id } = useParams<{ id: string }>()
   const [categories, setCategories] = useState<Category[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -34,7 +38,8 @@ export const EditAiServicePage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    control,
+    watch,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<ServiceFormValues>({
@@ -50,18 +55,28 @@ export const EditAiServicePage: React.FC = () => {
     },
   })
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "skills" as never,
-  })
+  // skills là mảng string primitive -> KHÔNG dùng useFieldArray (nó chỉ hỗ trợ mảng object).
+  const skills = watch("skills") ?? []
 
   const [newSkill, setNewSkill] = useState("")
 
   const handleAddSkill = () => {
-    if (newSkill.trim()) {
-      append(newSkill.trim() as never)
+    const value = newSkill.trim()
+    if (!value) return
+    if (skills.includes(value)) {
       setNewSkill("")
+      return
     }
+    setValue("skills", [...skills, value], { shouldValidate: true })
+    setNewSkill("")
+  }
+
+  const handleRemoveSkill = (index: number) => {
+    setValue(
+      "skills",
+      skills.filter((_, i) => i !== index),
+      { shouldValidate: true }
+    )
   }
 
   useEffect(() => {
@@ -101,7 +116,7 @@ export const EditAiServicePage: React.FC = () => {
     setErrorMsg(null)
     try {
       await updateService(Number(id), { ...values, coverImageUrl })
-      alert("Cập nhật gói dịch vụ thành công!")
+      toast.success("Cập nhật gói dịch vụ thành công!")
       navigate("/expert/services")
     } catch (err: any) {
       console.error(err)
@@ -124,7 +139,7 @@ export const EditAiServicePage: React.FC = () => {
     <div className="max-w-3xl mx-auto space-y-8">
       <div>
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-transparent border-0 mb-3"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -246,14 +261,13 @@ export const EditAiServicePage: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {fields.map((field: any, index) => (
+              {skills.map((skill, index) => (
                 <span
-                  key={field.id}
+                  key={`${skill}-${index}`}
                   className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold border border-primary/20"
                 >
-                  <input type="hidden" {...register(`skills.${index}`)} />
-                  {field.value || field}
-                  <button type="button" onClick={() => remove(index)} className="text-primary hover:text-primary/70 focus:outline-none">
+                  {skill}
+                  <button type="button" onClick={() => handleRemoveSkill(index)} className="text-primary hover:text-primary/70 focus:outline-none">
                     <X className="h-3 w-3" />
                   </button>
                 </span>

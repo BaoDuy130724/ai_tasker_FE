@@ -6,6 +6,7 @@ import type { ChatSession, ChatMessage } from "../types"
 import * as signalR from "@microsoft/signalr"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Send, User, Clock, CheckCircle, Paperclip, FileText, Download } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
 
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
@@ -14,6 +15,7 @@ const formatFileSize = (bytes: number) => {
 }
 
 export const ChatPage: React.FC = () => {
+  const toast = useToast()
   const { user, accessToken } = useAuthStore()
   const [searchParams] = useSearchParams()
   const targetExpertId = searchParams.get("expertId")
@@ -156,7 +158,7 @@ export const ChatPage: React.FC = () => {
       setInputText("")
     } catch (err) {
       console.error("Lỗi gửi tin nhắn qua SignalR:", err)
-      alert("Không thể gửi tin nhắn. Vui lòng kiểm tra lại kết nối.")
+      toast.error("Không gửi được tin nhắn.", "Vui lòng kiểm tra lại kết nối.")
     }
   }
 
@@ -173,7 +175,7 @@ export const ChatPage: React.FC = () => {
       }
     } catch (err) {
       console.error("Lỗi gửi file đính kèm:", err)
-      alert("Gửi file đính kèm thất bại. Kiểm tra dung lượng file (tối đa 10MB).")
+      toast.error("Gửi file đính kèm thất bại.", "Kiểm tra lại dung lượng file (tối đa 10MB).")
     } finally {
       setIsSendingAttachment(false)
       e.target.value = ""

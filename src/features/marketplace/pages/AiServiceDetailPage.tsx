@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
+import { useParams, Link } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useToast } from "@/shared/ui/toast"
 import { getServiceById, getFavorites, addFavorite, removeFavorite } from "../api"
 import type { AiService } from "../types"
 import { useAuthStore } from "@/features/auth/store"
@@ -9,7 +11,8 @@ import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles,
 
 export const AiServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const goBack = useSafeBack()
+  const toast = useToast()
   const { user } = useAuthStore()
 
   const [service, setService] = useState<AiService | null>(null)
@@ -56,7 +59,7 @@ export const AiServiceDetailPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Thao tác yêu thích thất bại.")
+      toast.error("Thao tác yêu thích thất bại.", err.response?.data?.message)
     } finally {
       setIsTogglingFavorite(false)
     }
@@ -91,7 +94,7 @@ export const AiServiceDetailPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <button
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft className="h-4 w-4" />

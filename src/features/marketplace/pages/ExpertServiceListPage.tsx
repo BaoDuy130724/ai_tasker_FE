@@ -5,9 +5,13 @@ import { getServices, deleteService } from "../api"
 import type { AiService } from "../types"
 import { Button } from "@/components/ui/button"
 import { Layers, DollarSign, Clock, PlusCircle, Trash2, Pencil } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 
 export const ExpertServiceListPage: React.FC = () => {
   const { user } = useAuthStore()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [myServices, setMyServices] = useState<AiService[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -33,14 +37,20 @@ export const ExpertServiceListPage: React.FC = () => {
   }, [user])
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa gói dịch vụ AI này khỏi Marketplace?")) return
+    const ok = await confirm({
+      title: "Xoá gói dịch vụ này?",
+      description: "Gói sẽ bị gỡ khỏi Marketplace và không thể khôi phục.",
+      confirmText: "Xoá gói",
+      variant: "destructive",
+    })
+    if (!ok) return
     try {
       await deleteService(id)
-      alert("Đã xóa gói dịch vụ thành công!")
+      toast.success("Đã xóa gói dịch vụ thành công!")
       await fetchMyServices()
     } catch (err) {
       console.error(err)
-      alert("Xóa gói dịch vụ thất bại.")
+      toast.error("Xóa gói dịch vụ thất bại.")
     }
   }
 

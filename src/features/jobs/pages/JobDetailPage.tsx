@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
+import { useParams, Link } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 import { getJobById, closeJob, updateJob } from "../api"
 import type { Job } from "../types"
 import { JobStatus } from "../types"
@@ -11,7 +14,9 @@ import { Calendar, DollarSign, ArrowLeft, ShieldAlert, Sparkles, UserCheck, Edit
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const goBack = useSafeBack()
+  const toast = useToast()
+  const confirm = useConfirm()
   const { user } = useAuthStore()
 
   const [job, setJob] = useState<Job | null>(null)
@@ -43,15 +48,21 @@ export const JobDetailPage: React.FC = () => {
 
   const handleCloseJob = async () => {
     if (!job || !user) return
-    if (!window.confirm("Bạn có chắc chắn muốn đóng tin tuyển dụng này? Expert sẽ không thể nộp proposal nữa.")) return
-    
+    const ok = await confirm({
+      title: "Đóng tin tuyển dụng này?",
+      description: "Expert sẽ không nộp được proposal mới nữa. Các proposal đã nhận vẫn xem lại được.",
+      confirmText: "Đóng tin",
+      variant: "destructive",
+    })
+    if (!ok) return
+
     setIsClosing(true)
     try {
       await closeJob(job.id)
       await fetchJobDetail() // Load lại chi tiết sau khi đóng
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Đóng công việc thất bại. Chỉ chủ sở hữu mới có quyền."))
+      toast.error("Đóng công việc thất bại.", getApiErrorMessage(err, "Chỉ chủ sở hữu mới có quyền."))
     } finally {
       setIsClosing(false)
     }
@@ -85,7 +96,7 @@ export const JobDetailPage: React.FC = () => {
       await fetchJobDetail()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Cập nhật công việc thất bại."))
+      toast.error("Cập nhật công việc thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSavingEdit(false)
     }
@@ -117,8 +128,8 @@ export const JobDetailPage: React.FC = () => {
         <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
         <h3 className="text-xl font-bold text-foreground">Lỗi tải dữ liệu</h3>
         <p className="text-sm text-muted-foreground">{errorMsg || "Không thể tải chi tiết công việc."}</p>
-        <Link to="/" className="text-primary hover:underline text-sm font-semibold flex items-center justify-center gap-1">
-          <ArrowLeft className="h-4 w-4" /> Quay lại trang chủ
+        <Link to="/dashboard" className="text-primary hover:underline text-sm font-semibold flex items-center justify-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Quay lại Dashboard
         </Link>
       </div>
     )
@@ -131,7 +142,7 @@ export const JobDetailPage: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back Button */}
       <button
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -210,6 +221,13 @@ export const JobDetailPage: React.FC = () => {
           {/* Đối với chủ sở hữu Job (Client) */}
           {isOwner && (
             <>
+              {/* Hành động chính của chủ job: xem đề xuất đã nhận để duyệt. */}
+              <Link to={`/jobs/${job.id}/proposals`}>
+                <Button className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-sm flex items-center gap-1.5">
+                  <UserCheck className="h-4 w-4" />
+                  Xem đề xuất ứng tuyển
+                </Button>
+              </Link>
               {job.status === JobStatus.Open && (
                 <Button
                   onClick={handleCloseJob}

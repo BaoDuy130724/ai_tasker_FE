@@ -26,7 +26,7 @@ export const HomePage: React.FC = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <Link
-                to={user.role === "Admin" ? "/admin/kpi" : "/dashboard"}
+                to="/dashboard"
                 className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary/95 transition-all hover:scale-105"
               >
                 Vào Dashboard
@@ -75,7 +75,7 @@ export const HomePage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               {user ? (
                 <Link
-                  to={user.role === "Admin" ? "/admin/kpi" : "/dashboard"}
+                  to="/dashboard"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-bold text-primary-foreground shadow-md hover:bg-primary/95 transition-all hover:scale-105"
                 >
                   Truy cập Dashboard của bạn
@@ -282,7 +282,7 @@ export const HomePage: React.FC = () => {
             <div>
               {user ? (
                 <Link
-                  to={user.role === "Admin" ? "/admin/kpi" : "/dashboard"}
+                  to="/dashboard"
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-md hover:bg-primary/95 transition-all hover:scale-105"
                 >
                   Truy cập Dashboard của bạn

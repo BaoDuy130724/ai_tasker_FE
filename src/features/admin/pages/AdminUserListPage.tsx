@@ -3,8 +3,12 @@ import { getUsers, lockUser } from "../api"
 import type { AdminUser } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, ShieldAlert, Lock, Unlock } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 
 export const AdminUserListPage: React.FC = () => {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -46,15 +50,23 @@ export const AdminUserListPage: React.FC = () => {
 
   const handleToggleLock = async (id: number, currentLockStatus: boolean) => {
     const actionText = currentLockStatus ? "Mở khóa" : "Khóa"
-    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này?`)) return
-    
+    const ok = await confirm({
+      title: `${actionText} tài khoản này?`,
+      description: currentLockStatus
+        ? "Người dùng sẽ đăng nhập và sử dụng hệ thống trở lại được."
+        : "Người dùng sẽ bị chặn đăng nhập cho tới khi được mở khóa lại.",
+      confirmText: actionText,
+      variant: currentLockStatus ? "default" : "destructive",
+    })
+    if (!ok) return
+
     try {
       await lockUser(id, !currentLockStatus)
-      alert(`${actionText} tài khoản thành công!`)
+      toast.success(`${actionText} tài khoản thành công!`)
       await fetchUsersList()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Cập nhật khóa tài khoản thất bại.")
+      toast.error("Cập nhật khóa tài khoản thất bại.", err.response?.data?.message)
     }
   }
 

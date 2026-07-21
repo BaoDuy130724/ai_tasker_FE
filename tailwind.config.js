@@ -48,11 +48,27 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Lớp neutral thứ hai cho overlay nổi (toast, dialog) — xem --elevated trong index.css.
+        elevated: {
+          DEFAULT: "hsl(var(--elevated))",
+          foreground: "hsl(var(--elevated-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      // Thang z-index ngữ nghĩa — không dùng số tuỳ tiện nữa.
+      // Modal cũ trong codebase đang là z-50, nên toast phải nằm trên mốc đó.
+      // ConfirmDialog dùng <dialog showModal()> nên nằm ở top-layer, cao hơn tất cả.
+      zIndex: {
+        dropdown: "20",
+        sticky: "30",
+        "modal-backdrop": "40",
+        modal: "50",
+        toast: "60",
+        tooltip: "70",
       },
       keyframes: {
         "accordion-down": {

@@ -117,13 +117,21 @@ export const ClientJobListPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto">
-                {job.status === JobStatus.Open && (
-                  <Link to={`/jobs/${job.id}/proposals`} className="w-full md:w-auto">
-                    <Button size="sm" className="w-full bg-primary text-primary-foreground font-semibold flex items-center gap-1 hover:bg-primary/95 transition-all">
-                      Xem Proposals
-                    </Button>
-                  </Link>
-                )}
+                {/* Job đã đóng vẫn phải xem lại được proposal đã nhận (để đối chiếu/tra cứu),
+                    chỉ khác là không còn là hành động chính nữa. */}
+                <Link to={`/jobs/${job.id}/proposals`} className="w-full md:w-auto">
+                  <Button
+                    size="sm"
+                    variant={job.status === JobStatus.Open ? "default" : "outline"}
+                    className={`w-full font-semibold flex items-center gap-1 transition-all ${
+                      job.status === JobStatus.Open
+                        ? "bg-primary text-primary-foreground hover:bg-primary/95"
+                        : "border-border hover:bg-secondary"
+                    }`}
+                  >
+                    Xem Proposals
+                  </Button>
+                </Link>
                 <Link to={`/jobs/${job.id}`} className="w-full md:w-auto">
                   <Button variant="outline" size="sm" className="w-full border-border hover:bg-secondary font-semibold flex items-center gap-1">
                     Chi tiết

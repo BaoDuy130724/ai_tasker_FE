@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 import {
   User as UserIcon,
   Camera,
@@ -35,6 +37,8 @@ const certificateStatusStyle = (status: string) => {
 }
 
 export const ProfilePage: React.FC = () => {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [allSkills, setAllSkills] = useState<Skill[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -76,7 +80,7 @@ export const ProfilePage: React.FC = () => {
       await fetchProfile()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Cập nhật hồ sơ thất bại.")
+      toast.error("Cập nhật hồ sơ thất bại.", err.response?.data?.message)
     } finally {
       setIsSaving(false)
     }
@@ -91,7 +95,7 @@ export const ProfilePage: React.FC = () => {
       await fetchProfile()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Tải ảnh đại diện thất bại.")
+      toast.error("Tải ảnh đại diện thất bại.", err.response?.data?.message)
     } finally {
       setIsUploadingAvatar(false)
       e.target.value = ""
@@ -106,7 +110,7 @@ export const ProfilePage: React.FC = () => {
       await fetchProfile()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Thêm kỹ năng thất bại (có thể đã tồn tại).")
+      toast.error("Thêm kỹ năng thất bại.", err.response?.data?.message ?? "Kỹ năng này có thể đã có trong hồ sơ.")
     }
   }
 
@@ -119,18 +123,24 @@ export const ProfilePage: React.FC = () => {
       await fetchProfile()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Thêm portfolio thất bại.")
+      toast.error("Thêm portfolio thất bại.", err.response?.data?.message)
     }
   }
 
   const handleDeletePortfolio = async (id: number) => {
-    if (!window.confirm("Xóa mục portfolio này?")) return
+    const ok = await confirm({
+      title: "Xoá mục portfolio này?",
+      description: "Mục sẽ bị gỡ khỏi hồ sơ công khai của bạn.",
+      confirmText: "Xoá",
+      variant: "destructive",
+    })
+    if (!ok) return
     try {
       await deletePortfolioItem(id)
       await fetchProfile()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Xóa thất bại.")
+      toast.error("Xóa mục portfolio thất bại.", err.response?.data?.message)
     }
   }
 
@@ -143,7 +153,7 @@ export const ProfilePage: React.FC = () => {
       await fetchProfile()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Nộp chứng chỉ thất bại.")
+      toast.error("Nộp chứng chỉ thất bại.", err.response?.data?.message)
     }
   }
 

@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate, useSearchParams } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useToast } from "@/shared/ui/toast"
 import { getJobById } from "@/features/jobs/api"
 import type { Job } from "@/features/jobs/types"
 import { submitProposal } from "../api"
@@ -19,6 +21,8 @@ type ProposalFormValues = z.infer<typeof proposalSchema>
 
 export const SubmitProposalPage: React.FC = () => {
   const navigate = useNavigate()
+  const goBack = useSafeBack()
+  const toast = useToast()
   const [searchParams] = useSearchParams()
   const jobIdStr = searchParams.get("jobId")
   const jobId = jobIdStr ? Number(jobIdStr) : null
@@ -70,8 +74,9 @@ export const SubmitProposalPage: React.FC = () => {
         jobId,
         ...values,
       })
-      alert("Nộp đề xuất ứng tuyển thành công!")
-      navigate("/")
+      toast.success("Nộp đề xuất ứng tuyển thành công!")
+      // Về danh sách proposal của mình để theo dõi trạng thái.
+      navigate("/expert/proposals", { replace: true })
     } catch (err: any) {
       console.error(err)
       setErrorMsg(
@@ -98,7 +103,7 @@ export const SubmitProposalPage: React.FC = () => {
         <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
         <h3 className="text-xl font-bold text-foreground">Không tìm thấy Job</h3>
         <p className="text-sm text-muted-foreground">{errorMsg || "Mã công việc không chính xác."}</p>
-        <Button onClick={() => navigate(-1)} variant="outline" className="flex items-center gap-1 mx-auto">
+        <Button onClick={goBack} variant="outline" className="flex items-center gap-1 mx-auto">
           <ArrowLeft className="h-4 w-4" /> Quay lại
         </Button>
       </div>
@@ -110,7 +115,7 @@ export const SubmitProposalPage: React.FC = () => {
       {/* Left side: Job Info Summary */}
       <div className="lg:col-span-1 space-y-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -229,7 +234,7 @@ export const SubmitProposalPage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="border-border hover:bg-secondary transition-all"
             >
               Hủy

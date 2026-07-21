@@ -4,8 +4,12 @@ import { getAdminJobs, removeAdminJob } from "../api"
 import type { AdminJob } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, Briefcase, Trash2 } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
+import { usePrompt } from "@/shared/ui/confirm-dialog"
 
 export const AdminJobListPage: React.FC = () => {
+  const toast = useToast()
+  const prompt = usePrompt()
   const [jobs, setJobs] = useState<AdminJob[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -48,15 +52,23 @@ export const AdminJobListPage: React.FC = () => {
   }
 
   const handleRemove = async (id: number) => {
-    const reason = window.prompt("Nhập lý do gỡ tin tuyển dụng này:")
+    const reason = await prompt({
+      title: "Gỡ tin tuyển dụng này?",
+      description: "Tin sẽ bị ẩn khỏi hệ thống. Lý do được lưu lại trong nhật ký kiểm duyệt.",
+      label: "Lý do gỡ tin",
+      placeholder: "VD: Nội dung vi phạm chính sách nền tảng",
+      multiline: true,
+      confirmText: "Gỡ tin",
+      variant: "destructive",
+    })
     if (!reason) return
     try {
       await removeAdminJob(id, reason)
-      alert("Đã gỡ tin tuyển dụng thành công!")
+      toast.success("Đã gỡ tin tuyển dụng thành công!")
       await fetchJobsList()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Gỡ tin tuyển dụng thất bại.")
+      toast.error("Gỡ tin tuyển dụng thất bại.", err.response?.data?.message)
     }
   }
 

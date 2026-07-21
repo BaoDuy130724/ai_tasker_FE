@@ -4,8 +4,12 @@ import { getAdminServices, removeAdminService } from "../api"
 import type { AdminService } from "../types"
 import { Button } from "@/components/ui/button"
 import { Search, Layers, Trash2, DollarSign } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
+import { usePrompt } from "@/shared/ui/confirm-dialog"
 
 export const AdminServiceListPage: React.FC = () => {
+  const toast = useToast()
+  const prompt = usePrompt()
   const [services, setServices] = useState<AdminService[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -48,15 +52,23 @@ export const AdminServiceListPage: React.FC = () => {
   }
 
   const handleRemove = async (id: number) => {
-    const reason = window.prompt("Nhập lý do gỡ dịch vụ này:")
+    const reason = await prompt({
+      title: "Gỡ gói dịch vụ này?",
+      description: "Dịch vụ sẽ bị ẩn khỏi Marketplace. Lý do được lưu lại trong nhật ký kiểm duyệt.",
+      label: "Lý do gỡ dịch vụ",
+      placeholder: "VD: Mô tả sai lệch so với sản phẩm bàn giao",
+      multiline: true,
+      confirmText: "Gỡ dịch vụ",
+      variant: "destructive",
+    })
     if (!reason) return
     try {
       await removeAdminService(id, reason)
-      alert("Đã gỡ dịch vụ thành công!")
+      toast.success("Đã gỡ dịch vụ thành công!")
       await fetchServicesList()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Gỡ dịch vụ thất bại.")
+      toast.error("Gỡ dịch vụ thất bại.", err.response?.data?.message)
     }
   }
 

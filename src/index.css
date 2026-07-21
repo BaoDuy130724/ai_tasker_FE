@@ -78,3 +78,64 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+@layer base {
+  /*
+   * Bề mặt NỔI cho lớp overlay (toast, dialog).
+   * Ở dark theme `--card` trùng hệt `--background`, nên panel nổi trên nền sẽ chìm nếu
+   * chỉ dựa vào border. `--elevated` tách ra thành lớp neutral thứ hai, sáng hơn nền.
+   */
+  :root {
+    --elevated: 0 0% 100%;              /* light: trắng, như card */
+    --elevated-foreground: 222.2 84% 4.9%;
+  }
+  .dark {
+    --elevated: 217.2 32.6% 14%;        /* dark: giữa background (4.9%) và secondary (17.5%) */
+    --elevated-foreground: 210 40% 98%;
+  }
+
+  /* Nền mờ của <dialog> — không style được bằng utility class của Tailwind. */
+  dialog::backdrop {
+    background-color: hsl(0 0% 0% / 0.45);
+    backdrop-filter: blur(4px);
+    animation: fk-backdrop-in 150ms ease-out;
+  }
+  @keyframes fk-backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Dialog nằm ở top-layer nên không chịu ảnh hưởng của container cha. */
+  dialog {
+    max-width: min(28rem, calc(100vw - 2rem));
+    padding: 0;
+    border: 0;
+    background: transparent;
+    /*
+     * BẮT BUỘC. UA stylesheet đặt `dialog { color: CanvasText }`, cắt đứt kế thừa color
+     * từ body. Thiếu dòng này thì mọi phần tử con không set màu tường minh (điển hình là
+     * Button variant="outline") sẽ rơi về ĐEN TUYỀN — ở dark theme thành đen trên nền
+     * gần đen, contrast ~1.1:1, không đọc nổi.
+     */
+    color: inherit;
+  }
+}
+
+/*
+ * Reduced motion là bắt buộc, không phải tuỳ chọn.
+ * tailwindcss-animate KHÔNG tự xử lý việc này — animate-in/out vẫn chạy đầy đủ.
+ * Rút mọi animation/transition về gần như tức thời, giữ lại crossfade tối thiểu.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  dialog::backdrop {
+    animation: none;
+  }
+}

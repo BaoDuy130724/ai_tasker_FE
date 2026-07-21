@@ -4,8 +4,10 @@ import { getFavorites, removeFavorite } from "../api"
 import type { Favorite } from "../types"
 import { Heart, DollarSign, Clock, Star, Layers } from "lucide-react"
 import { UserLink } from "@/shared/components/UserLink"
+import { useToast } from "@/shared/ui/toast"
 
 export const FavoritesPage: React.FC = () => {
+  const toast = useToast()
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -31,7 +33,7 @@ export const FavoritesPage: React.FC = () => {
       setFavorites((prev) => prev.filter((f) => f.serviceId !== serviceId))
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Bỏ yêu thích thất bại.")
+      toast.error("Bỏ yêu thích thất bại.", err.response?.data?.message)
     }
   }
 

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import { User as UserIcon, Award, Briefcase, Tag, ArrowLeft } from "lucide-react"
 import { getProfileByUserId } from "../api"
 import type { UserProfile } from "../types"
 import { UserRatingSummary } from "@/features/reviews/components/UserRatingSummary"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
 
 const certificateStatusStyle = (status: string) => {
   switch (status) {
@@ -19,6 +20,7 @@ const certificateStatusStyle = (status: string) => {
 /** Hồ sơ công khai, chỉ đọc — GET /Profiles/{userId} (BE AllowAnonymous). */
 export const PublicProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>()
+  const goBack = useSafeBack()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -60,10 +62,14 @@ export const PublicProfilePage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <Link to=".." relative="path" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <button
+        type="button"
+        onClick={goBack}
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0"
+      >
         <ArrowLeft className="h-3.5 w-3.5" />
         Quay lại
-      </Link>
+      </button>
 
       {/* Avatar + Thông tin cơ bản */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm">

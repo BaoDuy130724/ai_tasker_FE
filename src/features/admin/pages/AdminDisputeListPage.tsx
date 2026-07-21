@@ -3,8 +3,12 @@ import { getDisputes, resolveDispute } from "@/features/contracts-projects/api"
 import type { Dispute } from "@/features/contracts-projects/api"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, ExternalLink, AlertTriangle, Scale } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 
 export const AdminDisputeListPage: React.FC = () => {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [disputes, setDisputes] = useState<Dispute[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [projectIdFilter, setProjectIdFilter] = useState("")
@@ -37,17 +41,21 @@ export const AdminDisputeListPage: React.FC = () => {
 
   const handleResolve = async (disputeId: number, resolution: number) => {
     const resolutionText = resolution === 0 ? "Hoàn tiền cho Client" : "Giải ngân cho Expert"
-    if (!window.confirm(`Bạn có chắc chắn muốn giải quyết tranh chấp này bằng phương án: "${resolutionText}"?`)) {
-      return
-    }
+    const ok = await confirm({
+      title: "Ra phán quyết cho tranh chấp này?",
+      description: `Phương án: ${resolutionText}. Tiền trong Escrow sẽ được xử lý ngay và không thể hoàn tác.`,
+      confirmText: resolutionText,
+      variant: "destructive",
+    })
+    if (!ok) return
 
     try {
       await resolveDispute(disputeId, resolution)
-      alert("Giải quyết tranh chấp thành công!")
+      toast.success("Giải quyết tranh chấp thành công!")
       await fetchDisputesList()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Xử lý tranh chấp thất bại. Vui lòng thử lại.")
+      toast.error("Xử lý tranh chấp thất bại.", err.response?.data?.message ?? "Vui lòng thử lại.")
     }
   }
 

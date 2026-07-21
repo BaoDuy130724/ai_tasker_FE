@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
 import { useNotificationStore } from "@/features/notifications/store"
 import { AiAssistantSidebar } from "./AiAssistantSidebar"
+import { ErrorBoundary } from "./ErrorBoundary"
 import { Button } from "@/components/ui/button"
 import { identityApi } from "@/shared/api/client"
 import {
@@ -15,7 +16,6 @@ import {
   LogOut,
   Menu,
   X,
-  Shield,
   Search,
   Sparkles,
   Layers,
@@ -121,7 +121,6 @@ export const AppShell: React.FC = () => {
       case "Admin":
         return [
           ...commonLinks,
-          { to: "/admin/kpi", label: "Dashboard KPI", icon: Shield },
           { to: "/admin/users", label: "Quản lý Users", icon: User },
           { to: "/admin/jobs", label: "Quản lý Job", icon: Briefcase },
           { to: "/admin/services", label: "Quản lý Dịch vụ", icon: Layers },
@@ -140,7 +139,7 @@ export const AppShell: React.FC = () => {
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border md:bg-card">
         <div className="flex h-16 items-center px-6 border-b border-border">
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
+          <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
             <Sparkles className="h-6 w-6" />
             AI Tasker
           </Link>
@@ -230,7 +229,10 @@ export const AppShell: React.FC = () => {
         {/* Page Content */}
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background relative">
-            <Outlet />
+            {/* Lỗi render của 1 trang không được làm sập cả shell -> vẫn còn sidebar để đi chỗ khác. */}
+            <ErrorBoundary scope="page" resetKey={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
             
             {/* Floating AI Assistant Bubble */}
             <button
@@ -262,7 +264,7 @@ export const AppShell: React.FC = () => {
           {/* Menu Panel */}
           <div className="relative flex w-full max-w-xs flex-col bg-card h-full p-6 shadow-xl transition-transform duration-300">
             <div className="flex items-center justify-between pb-6 border-b border-border">
-              <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+              <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary">
                 <Sparkles className="h-6 w-6" />
                 AI Tasker
               </Link>

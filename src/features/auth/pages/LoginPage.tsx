@@ -42,7 +42,7 @@ export const LoginPage: React.FC = () => {
       const { accessToken, refreshToken, user: authUser } = tokenData
       const user = mapAuthUser(authUser)
       setAuth(user, accessToken, refreshToken)
-      navigate(user.role === "Admin" ? "/admin/kpi" : "/dashboard")
+      navigate("/dashboard")
     } catch (err: any) {
       console.error(err)
       if (err.response) {

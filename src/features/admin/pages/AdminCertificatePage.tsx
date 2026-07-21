@@ -3,8 +3,12 @@ import { getPendingCertificates, approveCertificate, rejectCertificate } from ".
 import type { Certificate } from "../types"
 import { Button } from "@/components/ui/button"
 import { Award, CheckCircle, XCircle, ExternalLink } from "lucide-react"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 
 export const AdminCertificatePage: React.FC = () => {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [certs, setCerts] = useState<Certificate[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -25,26 +29,37 @@ export const AdminCertificatePage: React.FC = () => {
   }, [])
 
   const handleApprove = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn phê duyệt chứng chỉ này? Chuyên gia sẽ được cấp tích xanh uy tín.")) return
+    const ok = await confirm({
+      title: "Phê duyệt chứng chỉ này?",
+      description: "Chuyên gia sẽ được cấp tích xanh uy tín trên hồ sơ công khai.",
+      confirmText: "Phê duyệt",
+    })
+    if (!ok) return
     try {
       await approveCertificate(id)
-      alert("Đã phê duyệt chứng chỉ thành công!")
+      toast.success("Đã phê duyệt chứng chỉ thành công!")
       await fetchCerts()
     } catch (err) {
       console.error(err)
-      alert("Phê duyệt thất bại.")
+      toast.error("Phê duyệt thất bại.")
     }
   }
 
   const handleReject = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn từ chối phê duyệt chứng chỉ này?")) return
+    const ok = await confirm({
+      title: "Từ chối chứng chỉ này?",
+      description: "Expert sẽ cần nộp lại hồ sơ năng lực nếu muốn được cấp tích xanh.",
+      confirmText: "Từ chối",
+      variant: "destructive",
+    })
+    if (!ok) return
     try {
       await rejectCertificate(id)
-      alert("Đã từ chối chứng chỉ thành công!")
+      toast.success("Đã từ chối chứng chỉ thành công!")
       await fetchCerts()
     } catch (err) {
       console.error(err)
-      alert("Từ chối thất bại.")
+      toast.error("Từ chối thất bại.")
     }
   }
 

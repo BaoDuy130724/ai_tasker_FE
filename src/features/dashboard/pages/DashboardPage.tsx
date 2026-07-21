@@ -8,7 +8,7 @@ import { ProposalStatus } from "@/features/proposals/types"
 import { getProjects } from "@/features/contracts-projects/api"
 import type { Project } from "@/features/contracts-projects/types"
 import { ProjectStatus } from "@/features/contracts-projects/types"
-import { getDashboardKpi, getPendingCertificates } from "@/features/admin/api"
+import { getDashboardKpi, refreshDashboardKpi, getPendingCertificates } from "@/features/admin/api"
 import type { DashboardKpi } from "@/features/admin/types"
 import {
   Briefcase,
@@ -18,10 +18,14 @@ import {
   DollarSign,
   Users,
   ShieldCheck,
+  Layers,
+  RefreshCw,
   PlusCircle,
   ArrowRight,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
+import { useToast } from "@/shared/ui/toast"
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
@@ -31,18 +35,39 @@ const KpiTile: React.FC<{
   value: React.ReactNode
   hint?: string
   icon: React.ReactNode
-}> = ({ label, value, hint, icon }) => (
-  <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-    <div className="flex items-center justify-between">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      {icon}
-    </div>
-    <div className="mt-2 flex items-baseline gap-2">
-      <span className="text-3xl font-bold">{value}</span>
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-    </div>
-  </div>
-)
+  /** Có `to` thì tile thành link điều hướng, kèm affordance hover. */
+  to?: string
+}> = ({ label, value, hint, icon, to }) => {
+  const body = (
+    <>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        {icon}
+      </div>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="text-3xl font-bold">{value}</span>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </div>
+    </>
+  )
+
+  if (!to) {
+    return <div className="rounded-xl border border-border bg-card p-6 shadow-sm">{body}</div>
+  }
+
+  return (
+    <Link
+      to={to}
+      className="group block rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      {body}
+      <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+        Xem chi tiết
+        <ArrowRight className="h-3 w-3" />
+      </span>
+    </Link>
+  )
+}
 
 const KpiSkeleton: React.FC = () => (
   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -68,6 +93,7 @@ const EmptyPanel: React.FC<{ icon: React.ReactNode; title: string; hint: string;
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore()
+  const toast = useToast()
 
   // Client
   const [clientJobs, setClientJobs] = useState<Job[]>([])
@@ -81,6 +107,7 @@ export const DashboardPage: React.FC = () => {
   // Admin
   const [kpi, setKpi] = useState<DashboardKpi | null>(null)
   const [pendingCertCount, setPendingCertCount] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -160,7 +187,9 @@ export const DashboardPage: React.FC = () => {
             <KpiTile
               label="Proposals đang chờ duyệt"
               value={pendingProposalsCount}
+              hint="cần xét duyệt"
               icon={<Clock className="h-5 w-5 text-amber-500" />}
+              to="/client/jobs"
             />
             <KpiTile
               label="Dự án đang triển khai"
@@ -340,22 +369,49 @@ export const DashboardPage: React.FC = () => {
     )
   }
 
+  // Đồng bộ lại KPI qua gRPC rồi tải lại số liệu Admin
+  const handleRefreshKpi = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshDashboardKpi()
+      const [kpiData, pendingCerts] = await Promise.all([getDashboardKpi(), getPendingCertificates()])
+      setKpi(kpiData || null)
+      setPendingCertCount(pendingCerts.length)
+      toast.success("Đồng bộ dữ liệu KPI qua gRPC thành công!")
+    } catch (err) {
+      console.error(err)
+      toast.error("Làm mới KPI qua gRPC thất bại.", "Kiểm tra lại kết nối tới các microservice.")
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   // Render Dashboard của Admin
   const renderAdminDashboard = () => (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Admin Portal</h1>
-        <p className="text-muted-foreground mt-1">Giám sát hoạt động và quản lý hệ thống AI Tasker.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Admin Portal</h1>
+          <p className="text-muted-foreground mt-1">Giám sát hoạt động và quản lý hệ thống AI Tasker.</p>
+        </div>
+        <Button
+          onClick={handleRefreshKpi}
+          disabled={isRefreshing}
+          className="bg-primary text-primary-foreground font-semibold flex items-center gap-1.5 shadow-sm"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          Đồng bộ gRPC 🔄
+        </Button>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse h-28 rounded-xl bg-card border border-border" />
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiTile
             label="Tổng số Users"
             value={kpi?.totalUsers ?? "—"}
@@ -369,6 +425,12 @@ export const DashboardPage: React.FC = () => {
             icon={<Briefcase className="h-5 w-5 text-indigo-500" />}
           />
           <KpiTile
+            label="Tổng dịch vụ AI"
+            value={kpi?.totalServices ?? "—"}
+            hint="trên marketplace"
+            icon={<Layers className="h-5 w-5 text-purple-500" />}
+          />
+          <KpiTile
             label="Chứng chỉ chờ duyệt"
             value={pendingCertCount}
             hint="cần duyệt"
@@ -378,13 +440,7 @@ export const DashboardPage: React.FC = () => {
       )}
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold">Hoạt động hệ thống</h3>
-          <Link to="/admin/kpi" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            Xem chi tiết KPI & đồng bộ gRPC
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+        <h3 className="text-lg font-bold">Hoạt động hệ thống</h3>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link to="/admin/users" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
             Quản lý người dùng

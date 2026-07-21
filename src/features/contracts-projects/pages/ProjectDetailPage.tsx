@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
+import { useParams, Link } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 import { useAuthStore } from "@/features/auth/store"
 import {
   getProjectById,
@@ -48,7 +51,9 @@ const ESCROW_STATUS_STYLES = [
 
 export const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const goBack = useSafeBack()
+  const toast = useToast()
+  const confirm = useConfirm()
   const { user } = useAuthStore()
 
   const [project, setProject] = useState<Project | null>(null)
@@ -86,8 +91,17 @@ export const ProjectDetailPage: React.FC = () => {
       if (data) {
         setProject(data.project)
         setMilestones(data.milestones || [])
-        const txs = await getTransactionHistory({ projectId: data.project.id, pageSize: 20 })
-        setTransactions(txs)
+
+        // Lịch sử giao dịch là dữ liệu PHỤ. Trước đây nó nằm chung try với getProjectById,
+        // nên chỉ cần call này lỗi là cả trang chuyển sang màn "Lỗi tải dữ liệu" dù project
+        // đã tải xong. Nuốt lỗi ở đây và để danh sách giao dịch rỗng.
+        try {
+          const txs = await getTransactionHistory({ projectId: data.project.id, pageSize: 20 })
+          setTransactions(txs)
+        } catch (txErr) {
+          console.error("Không tải được lịch sử giao dịch escrow:", txErr)
+          setTransactions([])
+        }
       }
     } catch (err: any) {
       console.error(err)
@@ -112,13 +126,13 @@ export const ProjectDetailPage: React.FC = () => {
         amount: amountInput,
         idempotencyKey: generateIdempotencyKey(),
       })
-      alert(`Đã nạp thành công $${amountInput} vào quỹ ký quỹ!`)
+      toast.success(`Đã nạp $${amountInput} vào quỹ ký quỹ!`)
       setActiveModal(null)
       setAmountInput(0)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Nạp tiền thất bại."))
+      toast.error("Nạp tiền thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSubmitting(false)
     }
@@ -134,13 +148,13 @@ export const ProjectDetailPage: React.FC = () => {
         amount: amountInput,
         idempotencyKey: generateIdempotencyKey(),
       })
-      alert(`Đã yêu cầu rút $${amountInput} thành công!`)
+      toast.success(`Đã gửi yêu cầu rút $${amountInput}.`)
       setActiveModal(null)
       setAmountInput(0)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Rút tiền thất bại."))
+      toast.error("Rút tiền thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSubmitting(false)
     }
@@ -151,7 +165,7 @@ export const ProjectDetailPage: React.FC = () => {
     if (!project) return
     
     if (milestoneForm.amount > project.escrowAvailableBalance) {
-      alert("Số dư khả dụng trong Escrow không đủ để cấp cho Milestone này. Vui lòng nạp thêm tiền ký quỹ.")
+      toast.error("Số dư ký quỹ không đủ.", "Vui lòng nạp thêm tiền vào Escrow trước khi tạo Milestone này.")
       return
     }
 
@@ -165,27 +179,34 @@ export const ProjectDetailPage: React.FC = () => {
         amount: milestoneForm.amount,
         order: milestones.length + 1,
       })
-      alert("Tạo Milestone mới thành công!")
+      toast.success("Tạo Milestone mới thành công!")
       setActiveModal(null)
       setMilestoneForm({ title: "", description: "", dueDate: "", amount: 0 })
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Tạo Milestone thất bại."))
+      toast.error("Tạo Milestone thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleApproveMilestone = async (milestoneId: number) => {
-    if (!window.confirm("Bạn xác nhận duyệt milestone này? Tiền tương ứng từ Locked Balance sẽ được giải ngân (Release) ngay lập tức.")) return
+    const ok = await confirm({
+      title: "Duyệt milestone này?",
+      description:
+        "Tiền tương ứng sẽ được giải ngân từ Locked Balance sang Expert ngay lập tức và không thể thu hồi.",
+      confirmText: "Duyệt & giải ngân",
+      variant: "destructive",
+    })
+    if (!ok) return
     try {
       await approveMilestone(milestoneId)
-      alert("Đã duyệt Milestone và giải ngân tiền cho Expert!")
+      toast.success("Đã duyệt Milestone và giải ngân tiền cho Expert!")
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Duyệt Milestone thất bại."))
+      toast.error("Duyệt Milestone thất bại.", getApiErrorMessage(err, ""))
     }
   }
 
@@ -195,14 +216,14 @@ export const ProjectDetailPage: React.FC = () => {
     setIsSubmitting(true)
     try {
       await requestRevision(selectedMilestoneId, revisionReason)
-      alert("Đã yêu cầu Expert sửa đổi sản phẩm.")
+      toast.success("Đã gửi yêu cầu sửa đổi tới Expert.")
       setActiveModal(null)
       setRevisionReason("")
       setSelectedMilestoneId(null)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Yêu cầu sửa đổi thất bại."))
+      toast.error("Yêu cầu sửa đổi thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSubmitting(false)
     }
@@ -218,14 +239,14 @@ export const ProjectDetailPage: React.FC = () => {
         fileUrl: deliverableForm.fileUrl,
         note: deliverableForm.note,
       })
-      alert("Nộp bài/Sản phẩm thành công! Đang chờ Client xét duyệt.")
+      toast.success("Nộp sản phẩm thành công!", "Đang chờ Client xét duyệt.")
       setActiveModal(null)
       setDeliverableForm({ fileUrl: "", note: "" })
       setSelectedMilestoneId(null)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Nộp bài thất bại."))
+      toast.error("Nộp bài thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSubmitting(false)
     }
@@ -241,13 +262,13 @@ export const ProjectDetailPage: React.FC = () => {
         description: disputeForm.description,
         evidenceFileUrl: disputeForm.evidenceFileUrl || null,
       })
-      alert("Đã mở Tranh Chấp thành công. Admin hệ thống sẽ liên hệ và xem xét bằng chứng.")
+      toast.success("Đã mở tranh chấp.", "Admin sẽ liên hệ và xem xét bằng chứng.")
       setActiveModal(null)
       setDisputeForm({ description: "", evidenceFileUrl: "" })
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      alert(getApiErrorMessage(err, "Mở tranh chấp thất bại."))
+      toast.error("Mở tranh chấp thất bại.", getApiErrorMessage(err, ""))
     } finally {
       setIsSubmitting(false)
     }
@@ -277,8 +298,8 @@ export const ProjectDetailPage: React.FC = () => {
         <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
         <h3 className="text-xl font-bold text-foreground">Lỗi tải dữ liệu</h3>
         <p className="text-sm text-muted-foreground">{errorMsg || "Không tìm thấy dự án."}</p>
-        <Link to="/" className="text-primary hover:underline text-sm font-semibold flex items-center justify-center gap-1">
-          <ArrowLeft className="h-4 w-4" /> Quay lại trang chủ
+        <Link to="/dashboard" className="text-primary hover:underline text-sm font-semibold flex items-center justify-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Quay lại Dashboard
         </Link>
       </div>
     )
@@ -302,7 +323,7 @@ export const ProjectDetailPage: React.FC = () => {
       {/* Back Button & Dispute Trigger */}
       <div className="flex justify-between items-center">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-transparent border-0"
         >
           <ArrowLeft className="h-4 w-4" />

@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useToast } from "@/shared/ui/toast"
+import { useConfirm } from "@/shared/ui/confirm-dialog"
 import { getJobById } from "@/features/jobs/api"
 import type { Job } from "@/features/jobs/types"
 import { getProposalsByJob } from "../api"
@@ -15,6 +18,9 @@ import { UserLink } from "@/shared/components/UserLink"
 export const JobProposalsPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
+  const goBack = useSafeBack()
+  const toast = useToast()
+  const confirm = useConfirm()
   
   const [job, setJob] = useState<Job | null>(null)
   const [proposals, setProposals] = useState<Proposal[]>([])
@@ -49,8 +55,16 @@ export const JobProposalsPage: React.FC = () => {
   }, [jobId])
 
   const handleApprove = async (proposalId: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn phê duyệt đề xuất này? Dự án và Hợp đồng mới sẽ tự động được tạo ra, đồng thời các đề xuất khác của job này sẽ bị từ chối.")) return
-    
+    const ok = await confirm({
+      title: "Phê duyệt đề xuất này?",
+      description:
+        "Dự án và Hợp đồng mới sẽ tự động được tạo ra, đồng thời mọi đề xuất khác của job này sẽ bị từ chối. Thao tác không thể hoàn tác.",
+      confirmText: "Phê duyệt",
+      variant: "destructive",
+    })
+    if (!ok) return
+
+
     setApprovingId(proposalId)
     try {
       const result = await approveProposal(proposalId)
@@ -59,11 +73,12 @@ export const JobProposalsPage: React.FC = () => {
       } else if (result?.project?.id) {
         navigate(`/projects/${result.project.id}`)
       } else {
-        navigate("/")
+        // Duyệt xong luôn sinh ra project -> về danh sách dự án thay vì trang chủ.
+        navigate("/client/projects")
       }
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Phê duyệt thất bại. Vui lòng thử lại.")
+      toast.error("Phê duyệt thất bại.", err.response?.data?.message ?? "Vui lòng thử lại.")
     } finally {
       setApprovingId(null)
     }
@@ -89,8 +104,8 @@ export const JobProposalsPage: React.FC = () => {
         <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
         <h3 className="text-xl font-bold text-foreground">Không tải được dữ liệu</h3>
         <p className="text-sm text-muted-foreground">{errorMsg || "Lỗi nạp thông tin."}</p>
-        <Link to="/" className="text-primary hover:underline text-sm font-semibold flex items-center justify-center gap-1">
-          <ArrowLeft className="h-4 w-4" /> Quay lại trang chủ
+        <Link to="/dashboard" className="text-primary hover:underline text-sm font-semibold flex items-center justify-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Quay lại Dashboard
         </Link>
       </div>
     )
@@ -100,7 +115,7 @@ export const JobProposalsPage: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back Button */}
       <button
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
       >
         <ArrowLeft className="h-4 w-4" />

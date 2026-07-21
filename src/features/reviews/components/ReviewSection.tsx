@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { createReview, createReply, getReviewsByProject } from "../api"
 import type { Review } from "../types"
 import { UserLink } from "@/shared/components/UserLink"
+import { useToast } from "@/shared/ui/toast"
 
 interface ReviewSectionProps {
   /** Project.id (int) — Review service dùng đúng int này làm projectId (không map Guid). */
@@ -47,6 +48,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
   counterpartId,
   counterpartLabel,
 }) => {
+  const toast = useToast()
   const [reviews, setReviews] = useState<Review[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [rating, setRating] = useState(0)
@@ -93,7 +95,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
       await fetchReviews()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Gửi đánh giá thất bại. Bạn có thể đã đánh giá dự án này rồi.")
+      toast.error("Gửi đánh giá thất bại.", err.response?.data?.message ?? "Bạn có thể đã đánh giá dự án này rồi.")
     } finally {
       setIsSubmitting(false)
     }
@@ -110,7 +112,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
       await fetchReviews()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || "Gửi phản hồi thất bại.")
+      toast.error("Gửi phản hồi thất bại.", err.response?.data?.message)
     } finally {
       setIsSubmitting(false)
     }

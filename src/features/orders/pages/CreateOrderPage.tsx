@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
+import { useSafeBack } from "@/shared/hooks/useSafeBack"
 import { getServiceById } from "@/features/marketplace/api"
 import type { AiService } from "@/features/marketplace/types"
 import { purchaseService, type ApproveProposalResult } from "@/features/contracts-projects/api"
@@ -11,6 +12,7 @@ import { DollarSign, Clock, ArrowLeft, ShieldAlert, ShoppingBag } from "lucide-r
 
 export const CreateOrderPage: React.FC = () => {
   const navigate = useNavigate()
+  const goBack = useSafeBack()
   const [searchParams] = useSearchParams()
   const serviceIdStr = searchParams.get("serviceId")
   const serviceId = serviceIdStr ? Number(serviceIdStr) : null
@@ -71,7 +73,7 @@ export const CreateOrderPage: React.FC = () => {
         <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
         <h3 className="text-xl font-bold text-foreground">Không tải được dịch vụ</h3>
         <p className="text-sm text-muted-foreground">{errorMsg || "Lỗi tải thông tin."}</p>
-        <Button onClick={() => navigate(-1)} variant="outline" className="flex items-center gap-1 mx-auto">
+        <Button onClick={goBack} variant="outline" className="flex items-center gap-1 mx-auto">
           <ArrowLeft className="h-4 w-4" /> Quay lại
         </Button>
       </div>
@@ -81,7 +83,7 @@ export const CreateOrderPage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <button
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -128,7 +130,7 @@ export const CreateOrderPage: React.FC = () => {
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)} className="border-border hover:bg-secondary transition-all">
+          <Button type="button" variant="outline" onClick={goBack} className="border-border hover:bg-secondary transition-all">
             Hủy
           </Button>
           <Button

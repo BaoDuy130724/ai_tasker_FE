@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate } from "react-router-dom"
@@ -39,7 +39,7 @@ export const CreateJobPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    control,
+    watch,
     setValue,
     formState: { errors },
   } = useForm<JobFormValues>({
@@ -53,18 +53,28 @@ export const CreateJobPage: React.FC = () => {
     },
   })
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "skills" as never,
-  })
+  // skills là mảng string primitive -> KHÔNG dùng useFieldArray (nó chỉ hỗ trợ mảng object).
+  const skills = watch("skills")
 
   const [newSkill, setNewSkill] = useState("")
 
   const handleAddSkill = () => {
-    if (newSkill.trim()) {
-      append(newSkill.trim() as never)
+    const value = newSkill.trim()
+    if (!value) return
+    if (skills.includes(value)) {
       setNewSkill("")
+      return
     }
+    setValue("skills", [...skills, value], { shouldValidate: true })
+    setNewSkill("")
+  }
+
+  const handleRemoveSkill = (index: number) => {
+    setValue(
+      "skills",
+      skills.filter((_, i) => i !== index),
+      { shouldValidate: true }
+    )
   }
 
   const handleGenerateDescription = async () => {
@@ -103,8 +113,9 @@ export const CreateJobPage: React.FC = () => {
     setErrorMsg(null)
     try {
       // BE suy clientId từ JWT — không gửi trong body nữa (JobsController 2026-07-20).
-      await createJob(values)
-      navigate("/")
+      const created = await createJob(values)
+      // Về thẳng job vừa tạo để xem kết quả; không có id thì về danh sách job của mình.
+      navigate(created?.id ? `/jobs/${created.id}` : "/client/jobs", { replace: true })
     } catch (err: any) {
       console.error(err)
       setErrorMsg(
@@ -246,16 +257,15 @@ export const CreateJobPage: React.FC = () => {
             </div>
             
             <div className="flex flex-wrap gap-2">
-              {fields.map((field: any, index) => (
+              {skills.map((skill, index) => (
                 <span
-                  key={field.id}
+                  key={`${skill}-${index}`}
                   className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold border border-primary/20"
                 >
-                  <input type="hidden" {...register(`skills.${index}`)} />
-                  {field.value || field}
+                  {skill}
                   <button
                     type="button"
-                    onClick={() => remove(index)}
+                    onClick={() => handleRemoveSkill(index)}
                     className="text-primary hover:text-primary/70 focus:outline-none"
                   >
                     <X className="h-3 w-3" />
@@ -273,7 +283,7 @@ export const CreateJobPage: React.FC = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/client/jobs")}
             className="border-border hover:bg-secondary transition-all"
           >
             Hủy

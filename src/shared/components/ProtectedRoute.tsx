@@ -27,7 +27,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Không đúng role -> redirect về trang unauthorized hoặc dashboard tương ứng
-    return <Navigate to={user.role === "Admin" ? "/admin/kpi" : "/dashboard"} replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   return <Outlet />

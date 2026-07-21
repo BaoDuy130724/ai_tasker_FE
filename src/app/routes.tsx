@@ -24,7 +24,6 @@ import { CreateAiServicePage } from "@/features/marketplace/pages/CreateAiServic
 import { EditAiServicePage } from "@/features/marketplace/pages/EditAiServicePage"
 import { CreateOrderPage } from "@/features/orders/pages/CreateOrderPage"
 import { OrderDashboardPage } from "@/features/orders/pages/OrderDashboardPage"
-import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage"
 import { AdminUserListPage } from "@/features/admin/pages/AdminUserListPage"
 import { AdminCertificatePage } from "@/features/admin/pages/AdminCertificatePage"
 import { AdminJobListPage } from "@/features/admin/pages/AdminJobListPage"
@@ -83,7 +82,6 @@ export const AppRoutes: React.FC = () => {
 
           {/* Admin Routes */}
           <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
-            <Route path="/admin/kpi" element={<AdminDashboardPage />} />
             <Route path="/admin/users" element={<AdminUserListPage />} />
             <Route path="/admin/jobs" element={<AdminJobListPage />} />
             <Route path="/admin/services" element={<AdminServiceListPage />} />
