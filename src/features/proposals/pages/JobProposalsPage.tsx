@@ -12,7 +12,7 @@ import { approveProposal } from "@/features/contracts-projects/api"
 import type { Contract } from "@/features/contracts-projects/types"
 import { ContractSignedModal } from "@/features/contracts-projects/components/ContractSignedModal"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert } from "lucide-react"
+import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert, MessageSquare } from "lucide-react"
 import { UserLink } from "@/shared/components/UserLink"
 
 export const JobProposalsPage: React.FC = () => {
@@ -175,7 +175,14 @@ export const JobProposalsPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-col justify-center items-end whitespace-nowrap min-w-[150px]">
+                <div className="flex flex-col justify-center items-end whitespace-nowrap min-w-[150px] gap-2">
+                  <Link to={`/messages?expertId=${prop.expertId}`}>
+                    <Button variant="outline" size="sm" className="border-border hover:bg-secondary font-semibold flex items-center gap-1.5 w-full md:w-auto">
+                      <MessageSquare className="h-4 w-4 text-primary" />
+                      Chat với Expert
+                    </Button>
+                  </Link>
+
                   {prop.status === ProposalStatus.Pending ? (
                     <Button
                       onClick={() => handleApprove(prop.id)}

@@ -6,6 +6,7 @@ import { AiAssistantSidebar } from "./AiAssistantSidebar"
 import { ChatBubble } from "@/features/messaging/components/ChatBubble"
 import { ErrorBoundary } from "./ErrorBoundary"
 import { Button } from "@/components/ui/button"
+import { useDraggable } from "@/shared/hooks/useDraggable"
 import { identityApi } from "@/shared/api/client"
 import {
   LayoutDashboard,
@@ -35,6 +36,7 @@ export const AppShell: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAiOpen, setIsAiOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const aiDraggable = useDraggable()
 
   // Hai panel nổi cùng neo góc phải nên chỉ cho phép mở một cái tại một thời điểm,
   // tránh chúng đè lên nhau.
@@ -262,8 +264,16 @@ export const AppShell: React.FC = () => {
 
             {/* Floating AI Assistant Bubble */}
             <button
-              onClick={() => openAi(!isAiOpen)}
-              className={`fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 z-50 border ${
+              type="button"
+              onMouseDown={aiDraggable.handleMouseDown}
+              onClick={() => {
+                if (aiDraggable.wasDragged()) return
+                openAi(!isAiOpen)
+              }}
+              style={{ transform: `translate(${aiDraggable.position.x}px, ${aiDraggable.position.y}px)` }}
+              className={`fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg flex items-center justify-center transition-transform duration-75 hover:scale-105 z-50 border select-none ${
+                aiDraggable.isDragging ? "cursor-grabbing" : "cursor-grab"
+              } ${
                 isAiOpen 
                   ? "bg-secondary text-foreground border-border hover:bg-secondary/90" 
                   : "bg-primary text-primary-foreground border-primary/20 hover:bg-primary/95"

@@ -2,6 +2,7 @@ import React, { useRef } from "react"
 import { ArrowLeft, Clock, Download, FileText, MessageSquare, Paperclip, Send, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { UserLink } from "@/shared/components/UserLink"
+import { useDraggable } from "@/shared/hooks/useDraggable"
 import { useChat, useMessagesEndRef } from "../useChat"
 import type { ChatSession } from "../types"
 
@@ -28,6 +29,7 @@ interface ChatBubbleProps {
  * (SignalR, lịch sử, gửi file) lấy từ useChat nên giống hệt trang chat.
  */
 export const ChatBubble: React.FC<ChatBubbleProps> = ({ isOpen, onToggle, onClose }) => {
+  const { position, handleMouseDown, wasDragged, isDragging } = useDraggable()
   const {
     myId,
     sessions,
@@ -179,9 +181,16 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ isOpen, onToggle, onClos
     <>
       <button
         type="button"
-        onClick={onToggle}
+        onMouseDown={handleMouseDown}
+        onClick={() => {
+          if (wasDragged()) return
+          onToggle()
+        }}
         aria-label={isOpen ? "Đóng tin nhắn" : "Mở tin nhắn"}
-        className={`fixed bottom-6 right-24 z-50 flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition-all hover:scale-105 ${
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        className={`fixed bottom-6 right-24 z-50 flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition-transform duration-75 hover:scale-105 select-none ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        } ${
           isOpen
             ? "border-border bg-secondary text-foreground hover:bg-secondary/90"
             : "border-primary/20 bg-primary text-primary-foreground hover:bg-primary/95"
@@ -198,7 +207,10 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ isOpen, onToggle, onClos
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-20 left-6 right-6 z-50 flex h-[500px] max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl duration-200 animate-in slide-in-from-bottom-5 md:left-auto md:w-[380px]">
+        <div
+          style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+          className="fixed bottom-20 left-6 right-6 z-50 flex h-[500px] max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl duration-200 animate-in slide-in-from-bottom-5 md:left-auto md:w-[380px]"
+        >
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border p-3">
             <div className="flex min-w-0 items-center gap-2">
               {activeSession && (

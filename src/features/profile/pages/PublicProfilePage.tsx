@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
-import { User as UserIcon, Award, Briefcase, Tag, ArrowLeft } from "lucide-react"
+import { useParams, Link } from "react-router-dom"
+import { User as UserIcon, Award, Briefcase, Tag, ArrowLeft, MessageSquare } from "lucide-react"
 import { getProfileByUserId } from "../api"
 import type { UserProfile } from "../types"
 import { UserRatingSummary } from "@/features/reviews/components/UserRatingSummary"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
+import { useAuthStore } from "@/features/auth/store"
+import { Button } from "@/components/ui/button"
 
 const certificateStatusStyle = (status: string) => {
   switch (status) {
@@ -20,6 +22,7 @@ const certificateStatusStyle = (status: string) => {
 /** Hồ sơ công khai, chỉ đọc — GET /Profiles/{userId} (BE AllowAnonymous). */
 export const PublicProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>()
+  const { user } = useAuthStore()
   const goBack = useSafeBack()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -73,21 +76,32 @@ export const PublicProfilePage: React.FC = () => {
 
       {/* Avatar + Thông tin cơ bản */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-4">
-          {profile.avatarUrl ? (
-            <img src={profile.avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover border border-border" />
-          ) : (
-            <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center border border-border">
-              <UserIcon className="h-8 w-8 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover border border-border" />
+            ) : (
+              <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center border border-border">
+                <UserIcon className="h-8 w-8 text-muted-foreground" />
+              </div>
+            )}
+            <div>
+              <p className="font-bold text-lg text-foreground">{profile.fullName || `Người dùng #${profile.userId}`}</p>
+              <p className="text-sm text-muted-foreground">{profile.title || "Chưa có chức danh"}</p>
+              <span className="inline-block mt-1 text-[10px] font-semibold uppercase text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5">
+                {profile.role}
+              </span>
             </div>
-          )}
-          <div>
-            <p className="font-bold text-lg text-foreground">{profile.fullName || `Người dùng #${profile.userId}`}</p>
-            <p className="text-sm text-muted-foreground">{profile.title || "Chưa có chức danh"}</p>
-            <span className="inline-block mt-1 text-[10px] font-semibold uppercase text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5">
-              {profile.role}
-            </span>
           </div>
+
+          {user && Number(user.id) !== profile.userId && (
+            <Link to={`/messages?expertId=${profile.userId}`}>
+              <Button className="bg-primary text-primary-foreground font-semibold flex items-center gap-1.5 shadow-sm">
+                <MessageSquare className="h-4 w-4" />
+                Nhắn tin trực tiếp
+              </Button>
+            </Link>
+          )}
         </div>
         {profile.bio && <p className="text-sm text-muted-foreground mt-4 border-t border-border pt-4 leading-relaxed">{profile.bio}</p>}
       </div>

@@ -7,7 +7,7 @@ import type { AiService } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
 import { UserLink } from "@/shared/components/UserLink"
-import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles, Heart } from "lucide-react"
+import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles, Heart, MessageSquare } from "lucide-react"
 
 export const AiServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -198,6 +198,15 @@ export const AiServiceDetailPage: React.FC = () => {
                 <p className="text-xs text-muted-foreground italic text-center">
                   Vui lòng <Link to="/login" className="text-primary underline font-semibold">Đăng nhập với vai trò Client</Link> để đặt mua dịch vụ này.
                 </p>
+              )}
+
+              {isClient && (
+                <Link to={`/messages?expertId=${service.expertId}`} className="block">
+                  <Button variant="outline" className="w-full border-border hover:bg-secondary flex items-center justify-center gap-1.5 font-bold">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    Chat trực tiếp với Expert
+                  </Button>
+                </Link>
               )}
 
               {isClient && (
