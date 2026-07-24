@@ -121,7 +121,8 @@ export const AppShell: React.FC = () => {
       case "Client":
         return [
           ...commonLinks,
-          { to: "/client/jobs", label: "Quản lý Job", icon: Briefcase },
+          { to: "/client/jobs", label: "Quản lý Job của tôi", icon: Briefcase },
+          { to: "/jobs", label: "Thị trường Job", icon: Search },
           { to: "/client/projects", label: "Dự án & Hợp đồng", icon: FileText },
           { to: "/marketplace", label: "Marketplace AI", icon: Search },
           { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },

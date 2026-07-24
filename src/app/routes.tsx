@@ -50,6 +50,7 @@ export const AppRoutes: React.FC = () => {
           {/* Common routes */}
           <Route path="/messages" element={<ChatPage />} />
           <Route path="/notifications" element={<NotificationListPage />} />
+          <Route path="/jobs" element={<JobListPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
@@ -70,7 +71,6 @@ export const AppRoutes: React.FC = () => {
 
           {/* Expert Routes */}
           <Route element={<ProtectedRoute allowedRoles={["Expert"]} />}>
-            <Route path="/jobs" element={<JobListPage />} />
             <Route path="/expert/proposals/new" element={<SubmitProposalPage />} />
             <Route path="/expert/proposals" element={<ExpertProposalListPage />} />
             <Route path="/expert/projects" element={<ProjectListPage />} />

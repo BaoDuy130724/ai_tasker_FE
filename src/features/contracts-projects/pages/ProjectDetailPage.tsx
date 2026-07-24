@@ -609,61 +609,62 @@ export const ProjectDetailPage: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed max-w-md">{m.description}</p>
-                      <span className="text-[10px] text-muted-foreground block">Hạn chót: {formatDate(m.dueDate)}</span>
+                        <span className="text-[10px] text-muted-foreground block">Hạn chót: {formatDate(m.dueDate)}</span>
 
-                      {/* Mốc đang chờ duyệt thì mở sẵn: Client phải xem được bài nộp
-                          TRƯỚC khi bấm "Duyệt & Giải ngân". */}
-                      <MilestoneDeliverables
-                        milestoneId={m.id}
-                        defaultOpen={m.status === 2}
-                        refreshKey={deliverableRefreshKey}
-                      />
-                    </div>
+                        {/* Mốc đang chờ duyệt thì mở sẵn: Client phải xem được bài nộp
+                            TRƯỚC khi bấm "Duyệt & Giải ngân". */}
+                        <MilestoneDeliverables
+                          milestoneId={m.id}
+                          defaultOpen={m.status === 2}
+                          refreshKey={deliverableRefreshKey}
+                        />
+                      </div>
 
-                    <div className="flex flex-row md:flex-col items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 justify-between">
-                      <span className="text-sm font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded whitespace-nowrap">
-                        ${m.amount}
-                      </span>
-                      
-                      <div className="flex gap-1.5">
-                        {/* Hành động của Expert: Nộp sản phẩm */}
-                        {isExpert && m.status === 1 && (
-                          <Button
-                            onClick={() => { setSelectedMilestoneId(m.id); setActiveModal("submitDeliverable"); }}
-                            size="sm"
-                            className="bg-primary text-primary-foreground text-xs h-7 px-2.5"
-                          >
-                            <Send className="h-3 w-3 mr-1" />
-                            Nộp sản phẩm
-                          </Button>
-                        )}
-
-                        {/* Hành động của Client: Duyệt hoặc Yêu cầu sửa */}
-                        {isClient && m.status === 2 && (
-                          <>
+                      <div className="flex flex-row md:flex-col items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 justify-between">
+                        <span className="text-sm font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded whitespace-nowrap">
+                          ${m.amount}
+                        </span>
+                        
+                        <div className="flex gap-1.5">
+                          {/* Hành động của Expert: Nộp sản phẩm */}
+                          {isExpert && m.status === 1 && (
                             <Button
-                              onClick={() => { setSelectedMilestoneId(m.id); setActiveModal("requestRevision"); }}
-                              variant="outline"
+                              onClick={() => { setSelectedMilestoneId(m.id); setActiveModal("submitDeliverable"); }}
                               size="sm"
-                              className="border-border hover:bg-secondary text-xs h-7 px-2.5"
+                              className="bg-primary text-primary-foreground text-xs h-7 px-2.5"
                             >
-                              <Edit3 className="h-3 w-3 mr-1" />
-                              Yêu cầu sửa
+                              <Send className="h-3 w-3 mr-1" />
+                              Nộp sản phẩm
                             </Button>
-                            <Button
-                              onClick={() => handleApproveMilestone(m.id)}
-                              size="sm"
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-2.5"
-                            >
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Duyệt & Giải ngân
-                            </Button>
-                          </>
-                        )}
+                          )}
+
+                          {/* Hành động của Client: Duyệt hoặc Yêu cầu sửa */}
+                          {isClient && m.status === 2 && (
+                            <>
+                              <Button
+                                onClick={() => { setSelectedMilestoneId(m.id); setActiveModal("requestRevision"); }}
+                                variant="outline"
+                                size="sm"
+                                className="border-border hover:bg-secondary text-xs h-7 px-2.5"
+                              >
+                                <Edit3 className="h-3 w-3 mr-1" />
+                                Yêu cầu sửa
+                              </Button>
+                              <Button
+                                onClick={() => handleApproveMilestone(m.id)}
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-2.5"
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Duyệt & Giải ngân
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
               </div>
             )}
           </div>
