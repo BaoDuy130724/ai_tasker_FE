@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { Link } from "react-router-dom"
 import { getProjects } from "../api"
 import type { Project } from "../types"
@@ -10,6 +10,7 @@ import { ProjectName } from "@/shared/components/ProjectName"
 export const ProjectListPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const hasLoadedOnce = useRef(false)
 
   useEffect(() => {
     const fetchProjectsList = async () => {
@@ -17,6 +18,7 @@ export const ProjectListPage: React.FC = () => {
       try {
         const data = await getProjects()
         setProjects(data)
+        hasLoadedOnce.current = true
       } catch (error) {
         console.error("Lỗi fetch projects list:", error)
       } finally {
@@ -58,7 +60,7 @@ export const ProjectListPage: React.FC = () => {
         <p className="text-muted-foreground mt-1">Theo dõi tiến trình hợp tác, giao nộp sản phẩm và quản lý quỹ ký quỹ.</p>
       </div>
 
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6 space-y-3">

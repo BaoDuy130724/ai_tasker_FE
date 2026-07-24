@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useRef } from "react"
 import { useNotificationStore } from "../store"
 import { Button } from "@/components/ui/button"
 import { Bell, Check, Clock, ExternalLink, Briefcase, Star, CheckCircle, DollarSign, ShieldAlert, MessageSquare } from "lucide-react"
@@ -31,9 +31,12 @@ const getEventVisual = (eventType: string): { icon: React.ReactNode; className: 
 export const NotificationListPage: React.FC = () => {
   const { notifications, isLoading, fetchNotifications, markAsRead, markAllAsRead } =
     useNotificationStore()
+  const hasLoadedOnce = useRef(false)
 
   useEffect(() => {
-    fetchNotifications()
+    fetchNotifications().then(() => {
+      hasLoadedOnce.current = true
+    })
   }, [fetchNotifications])
 
   const formatDate = (dateStr: string) => {
@@ -67,7 +70,7 @@ export const NotificationListPage: React.FC = () => {
         )}
       </div>
 
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-5 space-y-3">

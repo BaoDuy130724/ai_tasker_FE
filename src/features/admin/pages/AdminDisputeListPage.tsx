@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { getDisputes, resolveDispute } from "@/features/contracts-projects/api"
 import type { Dispute } from "@/features/contracts-projects/api"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, ExternalLink, AlertTriangle, Scale } from "lucide-react"
 import { useToast } from "@/shared/ui/use-toast"
 import { useConfirm } from "@/shared/ui/use-confirm"
+import { UserLink } from "@/shared/components/UserLink"
 
 export const AdminDisputeListPage: React.FC = () => {
   const toast = useToast()
@@ -13,6 +14,7 @@ export const AdminDisputeListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [projectIdFilter, setProjectIdFilter] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("")
+  const hasLoadedOnce = useRef(false)
 
   const fetchDisputesList = useCallback(async () => {
     setIsLoading(true)
@@ -28,6 +30,7 @@ export const AdminDisputeListPage: React.FC = () => {
         filtered = data.filter((d) => d.status === statusNum)
       }
       setDisputes(filtered)
+      hasLoadedOnce.current = true
     } catch (err) {
       console.error(err)
     } finally {
@@ -127,7 +130,7 @@ export const AdminDisputeListPage: React.FC = () => {
       </div>
 
       {/* Disputes List */}
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse h-32 rounded-xl bg-card border" />
@@ -152,7 +155,7 @@ export const AdminDisputeListPage: React.FC = () => {
                     {getStatusBadge(d.status)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Dự án ID: <span className="font-semibold text-primary">#{d.projectId}</span> • Tạo bởi User #{d.openedBy} ({d.openerRole})
+                    Dự án ID: <span className="font-semibold text-primary">#{d.projectId}</span> • Tạo bởi <UserLink userId={d.openedBy} className="inline text-xs text-primary hover:underline font-semibold" /> ({d.openerRole})
                   </p>
                 </div>
 
@@ -210,7 +213,7 @@ export const AdminDisputeListPage: React.FC = () => {
                     </div>
                     <div className="mt-1">
                       <p>Quyết định: <span className="font-semibold">{getResolutionText(d.resolution)}</span></p>
-                      <p>Người duyệt: Admin #{d.resolvedBy} • Thời gian: {d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : "N/A"}</p>
+                      <p>Người duyệt: {d.resolvedBy ? <UserLink userId={d.resolvedBy} className="inline text-xs text-emerald-700 dark:text-emerald-300 hover:underline font-semibold" /> : "N/A"} • Thời gian: {d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : "N/A"}</p>
                     </div>
                   </div>
                 )}

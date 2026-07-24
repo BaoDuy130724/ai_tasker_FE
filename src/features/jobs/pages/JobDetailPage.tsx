@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
 import { useToast } from "@/shared/ui/use-toast"
@@ -26,6 +26,7 @@ export const JobDetailPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editForm, setEditForm] = useState({ title: "", description: "", budget: 0, deadline: "", skillsText: "" })
+  const hasLoadedOnce = useRef(false)
 
   const fetchJobDetail = useCallback(async () => {
     if (!id) return
@@ -34,6 +35,7 @@ export const JobDetailPage: React.FC = () => {
     try {
       const data = await getJobById(Number(id))
       setJob(data)
+      hasLoadedOnce.current = true
     } catch (err: any) {
       console.error(err)
       setErrorMsg("Không tìm thấy thông tin công việc tuyển dụng.")
@@ -112,7 +114,7 @@ export const JobDetailPage: React.FC = () => {
     })
   }
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className="max-w-4xl mx-auto animate-pulse space-y-6">
         <div className="h-6 w-20 bg-muted rounded" />

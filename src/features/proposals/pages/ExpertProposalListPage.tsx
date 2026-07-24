@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { getMyProposals } from "../api"
 import type { Proposal } from "../types"
 import { ProposalStatus } from "../types"
@@ -25,12 +25,14 @@ export const ExpertProposalListPage: React.FC = () => {
   // jobId → projectId, để proposal được duyệt dẫn thẳng sang dự án tương ứng
   // thay vì làm dòng chết chỉ trỏ về lại tin tuyển dụng.
   const [projectIdByJobId, setProjectIdByJobId] = useState<Record<number, number>>({})
+  const hasLoadedOnce = useRef(false)
 
   const fetchProposals = async () => {
     setIsLoading(true)
     try {
       const data = await getMyProposals()
       setProposals(data)
+      hasLoadedOnce.current = true
     } catch (err) {
       console.error("Lỗi tải danh sách proposal:", err)
     } finally {
@@ -123,7 +125,7 @@ export const ExpertProposalListPage: React.FC = () => {
         </div>
       )}
 
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6 space-y-3">

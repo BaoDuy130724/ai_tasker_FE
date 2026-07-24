@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { getUsers, lockUser } from "../api"
 import type { AdminUser } from "../types"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ export const AdminUserListPage: React.FC = () => {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [pageSize] = useState(10)
+  const hasLoadedOnce = useRef(false)
 
   const fetchUsersList = useCallback(async () => {
     setIsLoading(true)
@@ -36,6 +37,7 @@ export const AdminUserListPage: React.FC = () => {
       if (data) {
         setUsers(data.items || [])
         setTotalPages(data.totalPages || 1)
+        hasLoadedOnce.current = true
       }
     } catch (err) {
       console.error(err)
@@ -117,7 +119,7 @@ export const AdminUserListPage: React.FC = () => {
       </form>
 
       {/* Users List Table */}
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse h-16 rounded-xl bg-card border" />

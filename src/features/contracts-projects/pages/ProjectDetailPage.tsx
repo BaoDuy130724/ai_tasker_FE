@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
 import { useToast } from "@/shared/ui/use-toast"
@@ -84,6 +84,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [disputeForm, setDisputeForm] = useState({ description: "", evidenceFileUrl: "" })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const hasLoadedOnce = useRef(false)
 
   const generateIdempotencyKey = () => {
     return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
@@ -114,6 +115,7 @@ export const ProjectDetailPage: React.FC = () => {
           console.error("Không tải được lịch sử giao dịch escrow:", txErr)
           setTransactions([])
         }
+        hasLoadedOnce.current = true
       }
     } catch (err: any) {
       console.error(err)
@@ -325,7 +327,7 @@ export const ProjectDetailPage: React.FC = () => {
     })
   }
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className="max-w-4xl mx-auto animate-pulse space-y-6">
         <div className="h-6 w-20 bg-muted rounded" />

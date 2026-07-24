@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { Link } from "react-router-dom"
 import { getAdminJobs, removeAdminJob } from "../api"
 import type { AdminJob } from "../types"
@@ -20,6 +20,7 @@ export const AdminJobListPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0)
   const [pageSize] = useState(10)
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  const hasLoadedOnce = useRef(false)
 
   const fetchJobsList = async () => {
     setIsLoading(true)
@@ -28,6 +29,7 @@ export const AdminJobListPage: React.FC = () => {
       const data = await getAdminJobs({ keyword: searchTerm || undefined, page, pageSize })
       setJobs(data?.items || [])
       setTotalCount(data?.totalCount || 0)
+      hasLoadedOnce.current = true
     } catch (err: any) {
       console.error(err)
       // Ghi chú: hiện tại Admin gọi Job qua gRPC nhưng Job service chưa bật gRPC server ⇒ lỗi
@@ -104,7 +106,7 @@ export const AdminJobListPage: React.FC = () => {
         </div>
       )}
 
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse h-16 rounded-xl bg-card border" />

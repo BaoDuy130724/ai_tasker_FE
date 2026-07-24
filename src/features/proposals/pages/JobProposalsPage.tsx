@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
 import { useToast } from "@/shared/ui/use-toast"
@@ -30,6 +30,7 @@ export const JobProposalsPage: React.FC = () => {
   // BE không có endpoint GET lại Contract sau khi tạo — đây là cơ hội DUY NHẤT thấy điều khoản hợp đồng,
   // nên hiện ngay trong modal thay vì chỉ lấy project.id rồi bỏ qua toàn bộ object Contract.
   const [approvedContract, setApprovedContract] = useState<{ contract: Contract; projectId: number } | null>(null)
+  const hasLoadedOnce = useRef(false)
 
   const fetchData = useCallback(async () => {
     if (!jobId) return
@@ -42,6 +43,7 @@ export const JobProposalsPage: React.FC = () => {
       ])
       setJob(jobData)
       setProposals(proposalsData)
+      hasLoadedOnce.current = true
     } catch (err: any) {
       console.error(err)
       setErrorMsg("Lỗi tải thông tin công việc hoặc danh sách proposals.")
@@ -84,7 +86,7 @@ export const JobProposalsPage: React.FC = () => {
     }
   }
 
-  if (isLoading) {
+  if (isLoading && !hasLoadedOnce.current) {
     return (
       <div className="max-w-4xl mx-auto animate-pulse space-y-6">
         <div className="h-6 w-20 bg-muted rounded" />

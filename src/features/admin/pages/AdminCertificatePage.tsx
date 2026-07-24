@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { getPendingCertificates, approveCertificate, rejectCertificate } from "../api"
 import type { Certificate } from "../types"
 import { Button } from "@/components/ui/button"
@@ -11,12 +11,14 @@ export const AdminCertificatePage: React.FC = () => {
   const confirm = useConfirm()
   const [certs, setCerts] = useState<Certificate[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const hasLoadedOnce = useRef(false)
 
   const fetchCerts = async () => {
     setIsLoading(true)
     try {
       const data = await getPendingCertificates()
       setCerts(data)
+      hasLoadedOnce.current = true
     } catch (err) {
       console.error(err)
     } finally {
@@ -70,7 +72,7 @@ export const AdminCertificatePage: React.FC = () => {
         <p className="text-muted-foreground mt-1">Duyệt hồ sơ chứng chỉ năng lực AI của Expert để kích hoạt tích xanh thương hiệu.</p>
       </div>
 
-      {isLoading ? (
+      {isLoading && !hasLoadedOnce.current ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse h-20 rounded-xl bg-card border" />
