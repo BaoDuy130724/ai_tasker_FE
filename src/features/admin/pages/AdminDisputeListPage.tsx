@@ -20,13 +20,13 @@ export const AdminDisputeListPage: React.FC = () => {
     setIsLoading(true)
     try {
       // getDisputes accepts optional projectId filter
-      const pid = projectIdFilter ? parseInt(projectIdFilter, 10) : undefined
-      const data = await getDisputes(isNaN(pid as any) ? undefined : pid)
+      const pid = projectIdFilter ? Number.parseInt(projectIdFilter, 10) : undefined
+      const data = await getDisputes(Number.isNaN(pid) ? undefined : pid)
       
       // Client-side status filtering if needed
       let filtered = data
       if (selectedStatus !== "") {
-        const statusNum = parseInt(selectedStatus, 10)
+        const statusNum = Number.parseInt(selectedStatus, 10)
         filtered = data.filter((d) => d.status === statusNum)
       }
       setDisputes(filtered)
@@ -130,98 +130,106 @@ export const AdminDisputeListPage: React.FC = () => {
       </div>
 
       {/* Disputes List */}
-      {isLoading && !hasLoadedOnce.current ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse h-32 rounded-xl bg-card border" />
-          ))}
-        </div>
-      ) : disputes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
-          <Scale className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <h3 className="text-lg font-bold text-foreground">Không tìm thấy tranh chấp nào</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
-            Hệ thống hiện tại chưa ghi nhận khiếu nại tranh chấp nào khớp với bộ lọc.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {disputes.map((d) => (
-            <div key={d.id} className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-all">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-4 gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg text-foreground">Dispute #{d.id}</span>
-                    {getStatusBadge(d.status)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Dự án ID: <span className="font-semibold text-primary">#{d.projectId}</span> • Tạo bởi <UserLink userId={d.openedBy} className="inline text-xs text-primary hover:underline font-semibold" /> ({d.openerRole})
-                  </p>
-                </div>
-
-                {d.status !== 2 && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => handleResolve(d.id, 0)}
-                      variant="outline"
-                      size="sm"
-                      className="border-destructive/20 text-destructive hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      Hoàn tiền Client
-                    </Button>
-                    <Button
-                      onClick={() => handleResolve(d.id, 1)}
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
-                    >
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      Giải ngân Expert
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Lý do tranh chấp</h4>
-                  <p className="text-sm text-foreground mt-1 bg-secondary/20 p-3 rounded-lg border border-border/55 leading-relaxed">
-                    {d.description}
-                  </p>
-                </div>
-
-                {d.evidenceFileUrl && (
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                    <a
-                      href={d.evidenceFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-0.5"
-                    >
-                      Xem file bằng chứng khiếu nại
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                )}
-
-                {d.status === 2 && (
-                  <div className="bg-emerald-50/10 border border-emerald-500/20 rounded-lg p-3 text-xs text-emerald-800 dark:text-emerald-400">
-                    <div className="font-bold flex items-center gap-1">
-                      <Scale className="h-4 w-4" />
-                      Tranh chấp đã được xử lý bởi Admin
-                    </div>
-                    <div className="mt-1">
-                      <p>Quyết định: <span className="font-semibold">{getResolutionText(d.resolution)}</span></p>
-                      <p>Người duyệt: {d.resolvedBy ? <UserLink userId={d.resolvedBy} className="inline text-xs text-emerald-700 dark:text-emerald-300 hover:underline font-semibold" /> : "N/A"} • Thời gian: {d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : "N/A"}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+      {(() => {
+        if (isLoading && !hasLoadedOnce.current) {
+          return (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse h-32 rounded-xl bg-card border" />
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )
+        }
+        if (disputes.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+              <Scale className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <h3 className="text-lg font-bold text-foreground">Không tìm thấy tranh chấp nào</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
+                Hệ thống hiện tại chưa ghi nhận khiếu nại tranh chấp nào khớp với bộ lọc.
+              </p>
+            </div>
+          )
+        }
+        return (
+          <div className="space-y-4">
+            {disputes.map((d) => (
+              <div key={d.id} className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-all">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-4 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-lg text-foreground">Dispute #{d.id}</span>
+                      {getStatusBadge(d.status)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Dự án ID: <span className="font-semibold text-primary">#{d.projectId}</span> • Tạo bởi <UserLink userId={d.openedBy} className="inline text-xs text-primary hover:underline font-semibold" /> ({d.openerRole})
+                    </p>
+                  </div>
+
+                  {d.status !== 2 && (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleResolve(d.id, 0)}
+                        variant="outline"
+                        size="sm"
+                        className="border-destructive/20 text-destructive hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Hoàn tiền Client
+                      </Button>
+                      <Button
+                        onClick={() => handleResolve(d.id, 1)}
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Giải ngân Expert
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Lý do tranh chấp</h4>
+                    <p className="text-sm text-foreground mt-1 bg-secondary/20 p-3 rounded-lg border border-border/55 leading-relaxed">
+                      {d.description}
+                    </p>
+                  </div>
+
+                  {d.evidenceFileUrl && (
+                    <div className="flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      <a
+                        href={d.evidenceFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                      >
+                        Xem file bằng chứng khiếu nại
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+
+                  {d.status === 2 && (
+                    <div className="bg-emerald-50/10 border border-emerald-500/20 rounded-lg p-3 text-xs text-emerald-800 dark:text-emerald-400">
+                      <div className="font-bold flex items-center gap-1">
+                        <Scale className="h-4 w-4" />
+                        Tranh chấp đã được xử lý bởi Admin
+                      </div>
+                      <div className="mt-1">
+                        <p>Quyết định: <span className="font-semibold">{getResolutionText(d.resolution)}</span></p>
+                        <p>Người duyệt: {d.resolvedBy ? <UserLink userId={d.resolvedBy} className="inline text-xs text-emerald-700 dark:text-emerald-300 hover:underline font-semibold" /> : "N/A"} • Thời gian: {d.resolvedAt ? new Date(d.resolvedAt).toLocaleString("vi-VN") : "N/A"}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
     </div>
   )
 }

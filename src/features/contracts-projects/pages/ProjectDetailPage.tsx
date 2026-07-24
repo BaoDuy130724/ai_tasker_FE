@@ -87,7 +87,12 @@ export const ProjectDetailPage: React.FC = () => {
   const hasLoadedOnce = useRef(false)
 
   const generateIdempotencyKey = () => {
-    return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID()
+    }
+    const array = new Uint32Array(2)
+    crypto.getRandomValues(array)
+    return Array.from(array, (n) => n.toString(36)).join("")
   }
 
   // Phần giá hợp đồng chưa được chia thành milestone. BE bắt buộc tổng milestone phải phủ
@@ -130,7 +135,7 @@ export const ProjectDetailPage: React.FC = () => {
     fetchProjectDetails()
   }, [fetchProjectDetails])
 
-  const handleDeposit = async (e: React.FormEvent) => {
+  const handleDeposit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!project || amountInput <= 0) return
     setIsSubmitting(true)
@@ -152,7 +157,7 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }
 
-  const handleWithdraw = async (e: React.FormEvent) => {
+  const handleWithdraw = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!project || amountInput <= 0) return
     setIsSubmitting(true)
@@ -174,7 +179,7 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }
 
-  const handleCreateMilestone = async (e: React.FormEvent) => {
+  const handleCreateMilestone = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!project) return
     
@@ -253,7 +258,7 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }
 
-  const handleRequestRevision = async (e: React.FormEvent) => {
+  const handleRequestRevision = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (selectedMilestoneId === null || !revisionReason.trim()) return
     setIsSubmitting(true)
@@ -272,7 +277,7 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }
 
-  const handleSubmitDeliverable = async (e: React.FormEvent) => {
+  const handleSubmitDeliverable = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (selectedMilestoneId === null || !deliverableForm.fileUrl.trim()) return
     setIsSubmitting(true)
@@ -297,7 +302,7 @@ export const ProjectDetailPage: React.FC = () => {
     }
   }
 
-  const handleOpenDispute = async (e: React.FormEvent) => {
+  const handleOpenDispute = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!project || !disputeForm.description.trim()) return
     setIsSubmitting(true)
@@ -527,20 +532,19 @@ export const ProjectDetailPage: React.FC = () => {
             const isCompleted = idx < currentStepIndex
             const isActive = idx === currentStepIndex
 
+            let stepBadgeClass = "bg-background border-muted text-muted-foreground"
+            if (isCompleted) {
+              stepBadgeClass = "bg-emerald-500 border-emerald-500 text-white"
+            } else if (isActive) {
+              stepBadgeClass = "bg-primary border-primary text-primary-foreground shadow-md ring-4 ring-primary/20 animate-pulse"
+            }
+
             return (
               <div
                 key={step.status}
                 className="relative z-10 flex flex-row md:flex-col items-center md:text-center gap-3 md:gap-2 flex-1 w-full"
               >
-                <div
-                  className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all ${
-                    isCompleted
-                      ? "bg-emerald-500 border-emerald-500 text-white"
-                      : isActive
-                      ? "bg-primary border-primary text-primary-foreground shadow-md ring-4 ring-primary/20 animate-pulse"
-                      : "bg-background border-muted text-muted-foreground"
-                  }`}
-                >
+                <div className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all ${stepBadgeClass}`}>
                   {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : idx + 1}
                 </div>
 
@@ -587,22 +591,24 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3.5">
-                {milestones.map((m) => (
-                  <div key={m.id} className="border border-border rounded-lg p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-secondary/10 hover:bg-secondary/20 transition-all">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-foreground">{m.title}</h4>
-                        <span className={`inline-block text-[9px] font-bold border rounded px-1.5 py-0.5 uppercase ${
-                          m.status === 3
-                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                            : m.status === 2
-                            ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                            : "bg-blue-500/10 text-blue-600 border-blue-500/20"
-                        }`}>
-                          {m.statusName}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed max-w-md">{m.description}</p>
+                {milestones.map((m) => {
+                  let milestoneStatusClass = "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                  if (m.status === 3) {
+                    milestoneStatusClass = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                  } else if (m.status === 2) {
+                    milestoneStatusClass = "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                  }
+
+                  return (
+                    <div key={m.id} className="border border-border rounded-lg p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-secondary/10 hover:bg-secondary/20 transition-all">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-foreground">{m.title}</h4>
+                          <span className={`inline-block text-[9px] font-bold border rounded px-1.5 py-0.5 uppercase ${milestoneStatusClass}`}>
+                            {m.statusName}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed max-w-md">{m.description}</p>
                       <span className="text-[10px] text-muted-foreground block">Hạn chót: {formatDate(m.dueDate)}</span>
 
                       {/* Mốc đang chờ duyệt thì mở sẵn: Client phải xem được bài nộp
@@ -654,10 +660,10 @@ export const ProjectDetailPage: React.FC = () => {
                             </Button>
                           </>
                         )}
-                      </div>
                     </div>
                   </div>
-                ))}
+                )
+              })}
               </div>
             )}
           </div>
@@ -704,7 +710,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* 1. Deposit Modal */}
       {activeModal === "deposit" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setActiveModal(null) }}
+          />
           <form onSubmit={handleDeposit} className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-6 space-y-5">
             <h3 className="font-bold text-lg text-primary flex items-center gap-1.5">
               <ArrowUpRight className="h-5 w-5" />
@@ -716,8 +728,9 @@ export const ProjectDetailPage: React.FC = () => {
               milestone bạn nghiệm thu.
             </p>
             <div>
-              <label className="block text-sm font-semibold mb-1.5">Số tiền nạp ($ USD)</label>
+              <label htmlFor="deposit-amount-input" className="block text-sm font-semibold mb-1.5">Số tiền nạp ($ USD)</label>
               <input
+                id="deposit-amount-input"
                 type="number"
                 required
                 min={project.proposedPrice}
@@ -748,7 +761,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* 2. Withdraw Modal */}
       {activeModal === "withdraw" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setActiveModal(null) }}
+          />
           <form onSubmit={handleWithdraw} className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-6 space-y-5">
             <h3 className="font-bold text-lg text-emerald-600 flex items-center gap-1.5">
               <ArrowDownLeft className="h-5 w-5" />
@@ -759,8 +778,9 @@ export const ProjectDetailPage: React.FC = () => {
               đóng hoặc bị huỷ. Bạn có tối đa <strong>${project.escrowAvailableBalance} USD</strong>.
             </p>
             <div>
-              <label className="block text-sm font-semibold mb-1.5">Số tiền muốn rút ($ USD)</label>
+              <label htmlFor="withdraw-amount-input" className="block text-sm font-semibold mb-1.5">Số tiền muốn rút ($ USD)</label>
               <input
+                id="withdraw-amount-input"
                 type="number"
                 required
                 min={1}
@@ -784,7 +804,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* 3. Create Milestone Modal */}
       {activeModal === "createMilestone" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setActiveModal(null) }}
+          />
           <form onSubmit={handleCreateMilestone} className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-xl p-6 space-y-4">
             <h3 className="font-bold text-lg text-primary flex items-center gap-1.5">
               <PlusCircle className="h-5 w-5" />
@@ -794,8 +820,9 @@ export const ProjectDetailPage: React.FC = () => {
             
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold mb-1">Tiêu đề mốc</label>
+                <label htmlFor="milestone-title-input" className="block text-sm font-semibold mb-1">Tiêu đề mốc</label>
                 <input
+                  id="milestone-title-input"
                   type="text"
                   required
                   value={milestoneForm.title}
@@ -806,8 +833,9 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1">Mô tả chi tiết</label>
+                <label htmlFor="milestone-desc-input" className="block text-sm font-semibold mb-1">Mô tả chi tiết</label>
                 <textarea
+                  id="milestone-desc-input"
                   rows={3}
                   required
                   value={milestoneForm.description}
@@ -819,8 +847,9 @@ export const ProjectDetailPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Hạn chót</label>
+                  <label htmlFor="milestone-duedate-input" className="block text-sm font-semibold mb-1">Hạn chót</label>
                   <input
+                    id="milestone-duedate-input"
                     type="date"
                     required
                     value={milestoneForm.dueDate}
@@ -829,8 +858,9 @@ export const ProjectDetailPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Số tiền ký quỹ ($)</label>
+                  <label htmlFor="milestone-amount-input" className="block text-sm font-semibold mb-1">Số tiền ký quỹ ($)</label>
                   <input
+                    id="milestone-amount-input"
                     type="number"
                     required
                     min={1}
@@ -857,7 +887,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* 4. Submit Deliverable Modal */}
       {activeModal === "submitDeliverable" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setActiveModal(null) }}
+          />
           <form onSubmit={handleSubmitDeliverable} className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-xl p-6 space-y-4">
             <h3 className="font-bold text-lg text-primary flex items-center gap-1.5">
               <Send className="h-5 w-5" />
@@ -866,8 +902,9 @@ export const ProjectDetailPage: React.FC = () => {
             
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold mb-1">Đường dẫn sản phẩm (File / Link Github / Drive)</label>
+                <label htmlFor="deliverable-url-input" className="block text-sm font-semibold mb-1">Đường dẫn sản phẩm (File / Link Github / Drive)</label>
                 <input
+                  id="deliverable-url-input"
                   type="url"
                   required
                   value={deliverableForm.fileUrl}
@@ -878,8 +915,9 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1">Ghi chú gửi kèm</label>
+                <label htmlFor="deliverable-note-input" className="block text-sm font-semibold mb-1">Ghi chú gửi kèm</label>
                 <textarea
+                  id="deliverable-note-input"
                   rows={4}
                   value={deliverableForm.note}
                   onChange={(e) => setDeliverableForm({ ...deliverableForm, note: e.target.value })}
@@ -902,7 +940,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* 5. Request Revision Modal */}
       {activeModal === "requestRevision" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setActiveModal(null) }}
+          />
           <form onSubmit={handleRequestRevision} className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-6 space-y-4">
             <h3 className="font-bold text-lg text-primary flex items-center gap-1.5">
               <Edit3 className="h-5 w-5" />
@@ -910,8 +954,9 @@ export const ProjectDetailPage: React.FC = () => {
             </h3>
             
             <div>
-              <label className="block text-sm font-semibold mb-1">Lý do yêu cầu & Nội dung cần sửa</label>
+              <label htmlFor="revision-reason-input" className="block text-sm font-semibold mb-1">Lý do yêu cầu & Nội dung cần sửa</label>
               <textarea
+                id="revision-reason-input"
                 rows={4}
                 required
                 value={revisionReason}
@@ -934,7 +979,13 @@ export const ProjectDetailPage: React.FC = () => {
       {/* 6. Open Dispute Modal */}
       {activeModal === "openDispute" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setActiveModal(null)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setActiveModal(null)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setActiveModal(null) }}
+          />
           <form onSubmit={handleOpenDispute} className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-6 space-y-4">
             <h3 className="font-bold text-lg text-destructive flex items-center gap-1.5">
               <AlertTriangle className="h-5 w-5" />
@@ -944,8 +995,9 @@ export const ProjectDetailPage: React.FC = () => {
             
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold mb-1">Mô tả lý do tranh chấp</label>
+                <label htmlFor="dispute-desc-input" className="block text-sm font-semibold mb-1">Mô tả lý do tranh chấp</label>
                 <textarea
+                  id="dispute-desc-input"
                   rows={4}
                   required
                   value={disputeForm.description}
@@ -956,8 +1008,9 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1">Đường dẫn file bằng chứng (Evidence URL)</label>
+                <label htmlFor="dispute-evidence-input" className="block text-sm font-semibold mb-1">Đường dẫn file bằng chứng (Evidence URL)</label>
                 <input
+                  id="dispute-evidence-input"
                   type="url"
                   value={disputeForm.evidenceFileUrl}
                   onChange={(e) => setDisputeForm({ ...disputeForm, evidenceFileUrl: e.target.value })}

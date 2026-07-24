@@ -60,64 +60,70 @@ export const ProjectListPage: React.FC = () => {
         <p className="text-muted-foreground mt-1">Theo dõi tiến trình hợp tác, giao nộp sản phẩm và quản lý quỹ ký quỹ.</p>
       </div>
 
-      {isLoading && !hasLoadedOnce.current ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6 space-y-3">
-              <div className="h-5 w-1/3 rounded bg-muted" />
-              <div className="h-3 w-1/2 rounded bg-muted" />
+      {(() => {
+        if (isLoading && !hasLoadedOnce.current) {
+          return (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6 space-y-3">
+                  <div className="h-5 w-1/3 rounded bg-muted" />
+                  <div className="h-3 w-1/2 rounded bg-muted" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
-          <Briefcase className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <h3 className="text-lg font-bold text-foreground">Chưa có dự án nào đang chạy</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
-            Dự án mới sẽ tự động được khởi tạo ngay khi Client phê duyệt đề xuất ứng tuyển của Expert.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-          {projects.map((proj) => (
-            <div key={proj.id} className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-secondary/10 transition-all">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-primary shrink-0" />
-                    <ProjectName jobId={proj.jobId} serviceId={proj.serviceId} />
-                  </h3>
-                  <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${getStatusStyle(proj.status)}`}>
-                    {proj.statusName}
-                  </span>
+          )
+        }
+        if (projects.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+              <Briefcase className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <h3 className="text-lg font-bold text-foreground">Chưa có dự án nào đang chạy</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
+                Dự án mới sẽ tự động được khởi tạo ngay khi Client phê duyệt đề xuất ứng tuyển của Expert.
+              </p>
+            </div>
+          )
+        }
+        return (
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {projects.map((proj) => (
+              <div key={proj.id} className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-secondary/10 transition-all">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-primary shrink-0" />
+                      <ProjectName jobId={proj.jobId} serviceId={proj.serviceId} />
+                    </h3>
+                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${getStatusStyle(proj.status)}`}>
+                      {proj.statusName}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                      Trị giá hợp đồng: <strong>${proj.proposedPrice}</strong>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Bắt đầu: {formatDate(proj.createdAt)}
+                    </span>
+                  </div>
                 </div>
-                
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                    Trị giá hợp đồng: <strong>${proj.proposedPrice}</strong>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Bắt đầu: {formatDate(proj.createdAt)}
-                  </span>
-                  {/* Bỏ "Hợp đồng: #id" — mã hợp đồng không giúp người dùng làm được gì.
-                      Chi tiết hợp đồng đã có sẵn trong trang quản lý dự án. */}
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <Link to={`/projects/${proj.id}`} className="w-full md:w-auto">
-                  <Button variant="outline" size="sm" className="w-full border-border hover:bg-secondary font-semibold flex items-center gap-1">
-                    Quản lý dự án
-                    <ArrowRight className="h-3 w-3" />
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <Link to={`/projects/${proj.id}`} className="w-full md:w-auto">
+                    <Button variant="outline" size="sm" className="w-full border-border hover:bg-secondary font-semibold flex items-center gap-1">
+                      Quản lý dự án
+                      <ArrowRight className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )
+      })()}
     </div>
   )
 }

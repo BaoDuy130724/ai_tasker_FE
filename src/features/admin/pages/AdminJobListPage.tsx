@@ -48,7 +48,7 @@ export const AdminJobListPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page])
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
     setPage(1)
     fetchJobsList()
@@ -106,63 +106,74 @@ export const AdminJobListPage: React.FC = () => {
         </div>
       )}
 
-      {isLoading && !hasLoadedOnce.current ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse h-16 rounded-xl bg-card border" />
-          ))}
-        </div>
-      ) : jobs.length === 0 && !errorMsg ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
-          <Briefcase className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <h3 className="text-lg font-bold text-foreground">Không tìm thấy Job nào</h3>
-        </div>
-      ) : jobs.length > 0 ? (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-            {jobs.map((j) => (
-              <div key={j.id} className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-secondary/10 transition-all">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Link to={`/jobs/${j.id}`} className="font-bold text-base text-foreground hover:text-primary">
-                      {j.title}
-                    </Link>
-                    <span className="inline-flex rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-semibold text-foreground border border-border">
-                      {j.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <span>Job ID: #{j.id} • Chủ sở hữu:</span>
-                    <UserLink
-                      userId={j.ownerUserId}
-                      showAvatar
-                      className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold text-xs"
-                    />
-                  </p>
-                </div>
-
-                <Button
-                  onClick={() => handleRemove(j.id)}
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/5 text-xs font-semibold flex items-center gap-1"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Gỡ tin
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Trước</Button>
-              <span className="text-sm font-semibold text-muted-foreground">Trang {page} / {totalPages}</span>
-              <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Tiếp</Button>
+      {(() => {
+        if (isLoading && !hasLoadedOnce.current) {
+          return (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse h-16 rounded-xl bg-card border" />
+              ))}
             </div>
-          )}
-        </div>
-      ) : null}
+          )
+        }
+        if (jobs.length === 0 && !errorMsg) {
+          return (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+              <Briefcase className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <h3 className="text-lg font-bold text-foreground">Không tìm thấy Job nào</h3>
+            </div>
+          )
+        }
+        if (jobs.length > 0) {
+          return (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+                {jobs.map((j) => (
+                  <div key={j.id} className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-secondary/10 transition-all">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Link to={`/jobs/${j.id}`} className="font-bold text-base text-foreground hover:text-primary">
+                          {j.title}
+                        </Link>
+                        <span className="inline-flex rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-semibold text-foreground border border-border">
+                          {j.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <span>Job ID: #{j.id} • Chủ sở hữu:</span>
+                        <UserLink
+                          userId={j.ownerUserId}
+                          showAvatar
+                          className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold text-xs"
+                        />
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={() => handleRemove(j.id)}
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/5 text-xs font-semibold flex items-center gap-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Gỡ tin
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Trước</Button>
+                  <span className="text-sm font-semibold text-muted-foreground">Trang {page} / {totalPages}</span>
+                  <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Tiếp</Button>
+                </div>
+              )}
+            </div>
+          )
+        }
+        return null
+      })()}
     </div>
   )
 }

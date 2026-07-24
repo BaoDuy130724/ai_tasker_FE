@@ -82,7 +82,7 @@ export const JobDetailPage: React.FC = () => {
     setIsEditing(true)
   }
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!job || !user) return
     setIsSavingEdit(true)
@@ -137,8 +137,8 @@ export const JobDetailPage: React.FC = () => {
     )
   }
 
-  const isOwner = user && job.clientId === Number(user.id)
-  const isExpert = user && user.role === "Expert"
+  const isOwner = Boolean(user && job.clientId === Number(user.id))
+  const isExpert = user?.role === "Expert"
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -286,7 +286,13 @@ export const JobDetailPage: React.FC = () => {
       {/* Edit Job Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEditing(false)} />
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsEditing(false)}
+            onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") setIsEditing(false) }}
+          />
           <form onSubmit={handleSaveEdit} className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-xl p-6 space-y-4 max-h-[85vh] overflow-y-auto">
             <h3 className="font-bold text-lg text-primary flex items-center gap-1.5">
               <Edit3 className="h-5 w-5" />
@@ -295,8 +301,9 @@ export const JobDetailPage: React.FC = () => {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold mb-1">Tiêu đề</label>
+                <label htmlFor="edit-job-title" className="block text-sm font-semibold mb-1">Tiêu đề</label>
                 <input
+                  id="edit-job-title"
                   type="text" required
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
@@ -304,8 +311,9 @@ export const JobDetailPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Mô tả</label>
+                <label htmlFor="edit-job-desc" className="block text-sm font-semibold mb-1">Mô tả</label>
                 <textarea
+                  id="edit-job-desc"
                   rows={4} required
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
@@ -314,8 +322,9 @@ export const JobDetailPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Ngân sách ($)</label>
+                  <label htmlFor="edit-job-budget" className="block text-sm font-semibold mb-1">Ngân sách ($)</label>
                   <input
+                    id="edit-job-budget"
                     type="number" required min={1}
                     value={editForm.budget || ""}
                     onChange={(e) => setEditForm({ ...editForm, budget: Number(e.target.value) })}
@@ -323,8 +332,9 @@ export const JobDetailPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Hạn chót</label>
+                  <label htmlFor="edit-job-deadline" className="block text-sm font-semibold mb-1">Hạn chót</label>
                   <input
+                    id="edit-job-deadline"
                     type="date" required
                     value={editForm.deadline}
                     onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
@@ -333,8 +343,9 @@ export const JobDetailPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Kỹ năng (phân cách bởi dấu phẩy)</label>
+                <label htmlFor="edit-job-skills" className="block text-sm font-semibold mb-1">Kỹ năng (phân cách bởi dấu phẩy)</label>
                 <input
+                  id="edit-job-skills"
                   type="text" required
                   value={editForm.skillsText}
                   onChange={(e) => setEditForm({ ...editForm, skillsText: e.target.value })}

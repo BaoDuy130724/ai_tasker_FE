@@ -125,108 +125,117 @@ export const ExpertProposalListPage: React.FC = () => {
         </div>
       )}
 
-      {isLoading && !hasLoadedOnce.current ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6 space-y-3">
-              <div className="h-5 w-1/3 rounded bg-muted" />
-              <div className="h-3 w-1/2 rounded bg-muted" />
+      {(() => {
+        if (isLoading && !hasLoadedOnce.current) {
+          return (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse rounded-xl border border-border bg-card p-6 space-y-3">
+                  <div className="h-5 w-1/3 rounded bg-muted" />
+                  <div className="h-3 w-1/2 rounded bg-muted" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : proposals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
-          <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <h3 className="text-lg font-bold text-foreground">Bạn chưa nộp đề xuất nào</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
-            Khám phá các Job đang tuyển và nộp đề xuất ứng tuyển ngay hôm nay.
-          </p>
-          <Link to="/jobs" className="mt-4">
-            <Button size="sm" className="bg-primary text-primary-foreground font-semibold">
-              Tìm việc làm
-            </Button>
-          </Link>
-        </div>
-      ) : visibleProposals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
-          <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
-          <h3 className="text-lg font-bold text-foreground">
-            {statusTab === "pending"
-              ? "Không có đề xuất nào đang chờ"
-              : statusTab === "accepted"
-              ? "Chưa có đề xuất nào được duyệt"
-              : "Chưa có đề xuất nào bị từ chối"}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-[300px]">
-            Chuyển sang tab khác để xem các đề xuất còn lại của bạn.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {visibleProposals.map((proposal) => (
-            <div key={proposal.id} className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${getStatusStyle(proposal.status)}`}>
-                      {getStatusName(proposal.status)}
+          )
+        }
+        if (proposals.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+              <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <h3 className="text-lg font-bold text-foreground">Bạn chưa nộp đề xuất nào</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
+                Khám phá các Job đang tuyển và nộp đề xuất ứng tuyển ngay hôm nay.
+              </p>
+              <Link to="/jobs" className="mt-4">
+                <Button size="sm" className="bg-primary text-primary-foreground font-semibold">
+                  Tìm việc làm
+                </Button>
+              </Link>
+            </div>
+          )
+        }
+        if (visibleProposals.length === 0) {
+          let emptyTitle = "Chưa có đề xuất nào bị từ chối"
+          if (statusTab === "pending") {
+            emptyTitle = "Không có đề xuất nào đang chờ"
+          } else if (statusTab === "accepted") {
+            emptyTitle = "Chưa có đề xuất nào được duyệt"
+          }
+
+          return (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-xl">
+              <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <h3 className="text-lg font-bold text-foreground">{emptyTitle}</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-[300px]">
+                Chuyển sang tab khác để xem các đề xuất còn lại của bạn.
+              </p>
+            </div>
+          )
+        }
+        return (
+          <div className="space-y-4">
+            {visibleProposals.map((proposal) => (
+              <div key={proposal.id} className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${getStatusStyle(proposal.status)}`}>
+                        {getStatusName(proposal.status)}
+                      </span>
+                    </div>
+                    <JobLink
+                      jobId={proposal.jobId}
+                      className="font-extrabold text-lg text-primary hover:underline block"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground bg-secondary/30 border px-3.5 py-2 rounded-xl">
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-emerald-500" />
+                      ${proposal.proposedPrice}
+                    </span>
+                    <span className="border-l h-4" />
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-primary" />
+                      {proposal.estimatedDays} ngày bàn giao
                     </span>
                   </div>
-                  {/* Tiêu đề job thay cho "Job ID #x" — id không mang thông tin gì cho người dùng. */}
-                  <JobLink
-                    jobId={proposal.jobId}
-                    className="font-extrabold text-lg text-primary hover:underline block"
-                  />
                 </div>
 
-                <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground bg-secondary/30 border px-3.5 py-2 rounded-xl">
-                  <span className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4 text-emerald-500" />
-                    ${proposal.proposedPrice}
-                  </span>
-                  <span className="border-l h-4" />
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-primary" />
-                    {proposal.estimatedDays} ngày bàn giao
-                  </span>
+                <div className="py-4 space-y-3">
+                  <div className="text-sm leading-relaxed bg-secondary/10 p-4 rounded-lg border">
+                    <p className="font-semibold text-xs text-muted-foreground uppercase mb-1">Nội dung đề cử ứng tuyển:</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{proposal.description}</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Ngày nộp: {new Date(proposal.createdAt).toLocaleDateString("vi-VN")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 pt-4 mt-2">
+                  <Button asChild variant="outline" size="sm" className="text-xs">
+                    <Link to={`/jobs/${proposal.jobId}`}>Xem chi tiết Job</Link>
+                  </Button>
+
+                  {proposal.status === ProposalStatus.Accepted &&
+                    projectIdByJobId[proposal.jobId] != null && (
+                      <Button asChild size="sm" className="text-xs font-semibold">
+                        <Link to={`/projects/${projectIdByJobId[proposal.jobId]}`}>
+                          Đến trang dự án
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </Button>
+                    )}
                 </div>
               </div>
-
-              <div className="py-4 space-y-3">
-                <div className="text-sm leading-relaxed bg-secondary/10 p-4 rounded-lg border">
-                  <p className="font-semibold text-xs text-muted-foreground uppercase mb-1">Nội dung đề cử ứng tuyển:</p>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{proposal.description}</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Ngày nộp: {new Date(proposal.createdAt).toLocaleDateString("vi-VN")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-end gap-2 border-t border-border/40 pt-4 mt-2">
-                <Button asChild variant="outline" size="sm" className="text-xs">
-                  <Link to={`/jobs/${proposal.jobId}`}>Xem chi tiết Job</Link>
-                </Button>
-
-                {/* Đề xuất được duyệt: việc thật đã chuyển sang Dự án — dẫn thẳng sang đó,
-                    thay vì để dòng này chỉ trỏ ngược về tin tuyển dụng. */}
-                {proposal.status === ProposalStatus.Accepted &&
-                  projectIdByJobId[proposal.jobId] != null && (
-                    <Button asChild size="sm" className="text-xs font-semibold">
-                      <Link to={`/projects/${projectIdByJobId[proposal.jobId]}`}>
-                        Đến trang dự án
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )
+      })()}
     </div>
   )
 }
