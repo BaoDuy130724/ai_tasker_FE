@@ -5,31 +5,69 @@ import { useNotificationStore } from "@/features/notifications/store"
 import { AiAssistantSidebar } from "./AiAssistantSidebar"
 import { ChatBubble } from "@/features/messaging/components/ChatBubble"
 import { ErrorBoundary } from "./ErrorBoundary"
+import { Breadcrumbs } from "./Breadcrumbs"
+import { PageTitleProvider } from "./PageTitleContext"
+import { usePageTitleValue } from "@/shared/hooks/usePageTitle"
 import { Button } from "@/components/ui/button"
 import { useDraggable } from "@/shared/hooks/useDraggable"
 import { identityApi } from "@/shared/api/client"
 import {
-  LayoutDashboard,
-  Briefcase,
-  FileText,
+  buildBreadcrumbs,
+  getNavSections,
+  resolveActiveNavKey,
+  type NavSection,
+} from "@/app/navigation"
+import {
   Bell,
-  User,
   LogOut,
   Menu,
   X,
-  Search,
   Sparkles,
-  Layers,
-  Star,
-  ShoppingBag,
   BrainCircuit,
-  Heart,
-  Scale,
   Sun,
   Moon,
 } from "lucide-react"
 
-export const AppShell: React.FC = () => {
+interface SidebarNavProps {
+  sections: NavSection[]
+  /** Path của mục đang active — đã tính cả trường hợp đang ở trang con. */
+  activeKey?: string
+  onNavigate?: () => void
+}
+
+const SidebarNav: React.FC<SidebarNavProps> = ({ sections, activeKey, onNavigate }) => (
+  <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
+    {sections.map((section) => (
+      <div key={section.title} className="space-y-1">
+        <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          {section.title}
+        </p>
+        {section.items.map((item) => {
+          const Icon = item.icon
+          const isActive = activeKey === item.to
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={onNavigate}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          )
+        })}
+      </div>
+    ))}
+  </nav>
+)
+
+const AppShellContent: React.FC = () => {
   const { user, clearAuth } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
@@ -83,7 +121,7 @@ export const AppShell: React.FC = () => {
     if (accessToken) {
       startSignalR(accessToken)
       fetchNotifications()
-      
+
       if (typeof window !== "undefined" && "Notification" in window) {
         if (Notification.permission === "default") {
           Notification.requestPermission()
@@ -107,105 +145,67 @@ export const AppShell: React.FC = () => {
     navigate("/login")
   }
 
-  // Định nghĩa menu links theo role
-  const getNavigationLinks = () => {
-    if (!user) return []
+  // Điều hướng và breadcrumb cùng đọc từ một bản đồ route duy nhất (@/app/navigation),
+  // nên trang con luôn làm sáng đúng mục cha trong sidebar.
+  const sections = getNavSections(user?.role)
+  const activeNavKey = resolveActiveNavKey(location.pathname, user?.role)
+  const pageTitle = usePageTitleValue()
+  const crumbs = buildBreadcrumbs(location.pathname, user?.role, pageTitle)
+  const currentLabel = crumbs[crumbs.length - 1]?.label
 
-    // "Tin nhắn" đã chuyển thành bubble nổi (ChatBubble) nên không còn trong sidebar.
-    // Route /messages vẫn giữ cho các link cũ / thông báo trỏ tới.
-    const commonLinks = [
-      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ]
+  useEffect(() => {
+    document.title = currentLabel ? `${currentLabel} · AI Tasker` : "AI Tasker"
+  }, [currentLabel])
 
-    switch (user.role) {
-      case "Client":
-        return [
-          ...commonLinks,
-          { to: "/client/jobs", label: "Quản lý Job của tôi", icon: Briefcase },
-          { to: "/jobs", label: "Thị trường Job", icon: Search },
-          { to: "/client/projects", label: "Dự án & Hợp đồng", icon: FileText },
-          { to: "/marketplace", label: "Marketplace AI", icon: Search },
-          { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },
-          { to: "/client/orders", label: "Đơn mua dịch vụ", icon: ShoppingBag },
-        ]
-      case "Expert":
-        return [
-          ...commonLinks,
-          { to: "/jobs", label: "Tìm việc làm", icon: Search },
-          { to: "/expert/proposals", label: "Proposals của tôi", icon: FileText },
-          { to: "/expert/projects", label: "Dự án nhận làm", icon: Layers },
-          { to: "/expert/services", label: "Dịch vụ của tôi", icon: Briefcase },
-          { to: "/favorites", label: "Dịch vụ đã lưu", icon: Heart },
-          { to: "/expert/orders", label: "Đơn đặt hàng", icon: ShoppingBag },
-        ]
-      case "Admin":
-        return [
-          ...commonLinks,
-          { to: "/admin/users", label: "Quản lý Users", icon: User },
-          { to: "/admin/jobs", label: "Quản lý Job", icon: Briefcase },
-          { to: "/admin/services", label: "Quản lý Dịch vụ", icon: Layers },
-          { to: "/admin/certificates", label: "Duyệt Chứng chỉ", icon: Star },
-          { to: "/admin/disputes", label: "Xử lý Tranh chấp", icon: Scale },
-        ]
-      default:
-        return commonLinks
-    }
-  }
+  const isProfileActive = location.pathname === "/profile/me"
+  const isNotificationsActive = location.pathname === "/notifications"
 
-  const links = getNavigationLinks()
+  const userCard = (onNavigate?: () => void) => (
+    <div className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-secondary/50 px-3 py-2">
+      <Link
+        to="/profile/me"
+        onClick={onNavigate}
+        aria-current={isProfileActive ? "page" : undefined}
+        className={`group flex cursor-pointer items-center gap-3 overflow-hidden transition-opacity hover:opacity-80 ${
+          isProfileActive ? "text-primary" : ""
+        }`}
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary transition-colors group-hover:bg-primary/20">
+          {user?.fullName?.charAt(0) || "U"}
+        </div>
+        <div className="overflow-hidden">
+          <p className="truncate text-sm font-semibold transition-colors group-hover:text-primary">
+            {user?.fullName}
+          </p>
+          <p className="truncate text-xs capitalize text-muted-foreground">{user?.role}</p>
+        </div>
+      </Link>
+      <button
+        onClick={toggleTheme}
+        className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
+      >
+        {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
+      </button>
+    </div>
+  )
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border md:bg-card">
-        <div className="flex h-16 items-center px-6 border-b border-border">
-          <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl tracking-tight text-primary">
+        <div className="flex h-16 items-center border-b border-border px-6">
+          <Link to="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight text-primary">
             <Sparkles className="h-6 w-6" />
             AI Tasker
           </Link>
         </div>
-        <nav className="flex-1 space-y-1 px-4 py-6 overflow-y-auto">
-          {links.map((link) => {
-            const Icon = link.icon
-            const isActive = location.pathname === link.to
-            return (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                {link.label}
-              </Link>
-            )
-          })}
-        </nav>
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-4">
-            <Link to="/profile/me" className="flex items-center gap-3 overflow-hidden hover:opacity-80 transition-opacity cursor-pointer group">
-              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
-                {user?.fullName?.charAt(0) || "U"}
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{user?.fullName}</p>
-                <p className="text-xs text-muted-foreground truncate capitalize">{user?.role}</p>
-              </div>
-            </Link>
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
-            </button>
-          </div>
+        <SidebarNav sections={sections} activeKey={activeNavKey} />
+        <div className="border-t border-border p-4">
+          {userCard()}
           <Button
             variant="outline"
-            className="w-full flex items-center justify-center gap-2 border-border text-muted-foreground hover:text-foreground"
+            className="flex w-full items-center justify-center gap-2 border-border text-muted-foreground hover:text-foreground"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />
@@ -217,28 +217,33 @@ export const AppShell: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-          <div className="flex items-center gap-4">
+        <header className="flex h-16 items-center justify-between gap-4 border-b border-border bg-card px-4 md:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <button
-              className="md:hidden text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground md:hidden"
               onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Mở menu điều hướng"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <div className="font-semibold text-lg text-foreground md:block hidden">
-              Chào mừng quay trở lại, {user?.fullName}!
-            </div>
+            <Breadcrumbs items={crumbs} />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-4">
             {/* Notification Bell */}
             <Link
               to="/notifications"
-              className="relative p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
+              aria-label="Thông báo"
+              aria-current={isNotificationsActive ? "page" : undefined}
+              className={`relative rounded-lg p-2 transition-all ${
+                isNotificationsActive
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center border-2 border-card">
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-card bg-primary text-[10px] font-bold text-primary-foreground">
                   {unreadCount}
                 </span>
               )}
@@ -248,12 +253,12 @@ export const AppShell: React.FC = () => {
 
         {/* Page Content */}
         <div className="flex flex-1 overflow-hidden">
-          <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-background relative">
+          <main className="relative flex-1 overflow-y-auto bg-background p-6 md:p-8">
             {/* Lỗi render của 1 trang không được làm sập cả shell -> vẫn còn sidebar để đi chỗ khác. */}
             <ErrorBoundary scope="page" resetKey={location.pathname}>
               <Outlet />
             </ErrorBoundary>
-            
+
             {/* Floating Chat Bubble — thay cho mục "Tin nhắn" trong sidebar */}
             {showChatBubble && (
               <ChatBubble
@@ -272,11 +277,11 @@ export const AppShell: React.FC = () => {
                 openAi(!isAiOpen)
               }}
               style={{ transform: `translate(${aiDraggable.position.x}px, ${aiDraggable.position.y}px)` }}
-              className={`fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg flex items-center justify-center transition-transform duration-75 hover:scale-105 z-50 border select-none ${
+              className={`fixed bottom-6 right-6 z-50 flex h-12 w-12 select-none items-center justify-center rounded-full border shadow-lg transition-transform duration-75 hover:scale-105 ${
                 aiDraggable.isDragging ? "cursor-grabbing" : "cursor-grab"
               } ${
-                isAiOpen 
-                  ? "bg-secondary text-foreground border-border hover:bg-secondary/90" 
+                isAiOpen
+                  ? "bg-secondary text-foreground border-border hover:bg-secondary/90"
                   : "bg-primary text-primary-foreground border-primary/20 hover:bg-primary/95"
               }`}
             >
@@ -299,62 +304,30 @@ export const AppShell: React.FC = () => {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           {/* Menu Panel */}
-          <div className="relative flex w-full max-w-xs flex-col bg-card h-full p-6 shadow-xl transition-transform duration-300">
-            <div className="flex items-center justify-between pb-6 border-b border-border">
-              <Link to="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary">
+          <div className="relative flex h-full w-full max-w-xs flex-col bg-card px-2 py-6 shadow-xl transition-transform duration-300">
+            <div className="flex items-center justify-between border-b border-border px-4 pb-6">
+              <Link to="/dashboard" className="flex items-center gap-2 text-xl font-bold text-primary">
                 <Sparkles className="h-6 w-6" />
                 AI Tasker
               </Link>
               <button
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Đóng menu điều hướng"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <nav className="flex-1 space-y-1 py-6 overflow-y-auto">
-              {links.map((link) => {
-                const Icon = link.icon
-                const isActive = location.pathname === link.to
-                return (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {link.label}
-                  </Link>
-                )
-              })}
-            </nav>
-            <div className="pt-4 border-t border-border">
-              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-4">
-                <Link to="/profile/me" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 overflow-hidden hover:opacity-80 transition-opacity cursor-pointer group">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
-                    {user?.fullName?.charAt(0) || "U"}
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{user?.fullName}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-                  </div>
-                </Link>
-                <button
-                  onClick={toggleTheme}
-                  className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                  title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
-                </button>
-              </div>
+            <SidebarNav
+              sections={sections}
+              activeKey={activeNavKey}
+              onNavigate={() => setIsMobileMenuOpen(false)}
+            />
+            <div className="border-t border-border px-4 pt-4">
+              {userCard(() => setIsMobileMenuOpen(false))}
               <Button
                 variant="outline"
-                className="w-full flex items-center justify-center gap-2 border-border text-muted-foreground hover:text-foreground"
+                className="flex w-full items-center justify-center gap-2 border-border text-muted-foreground hover:text-foreground"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" />
@@ -367,3 +340,10 @@ export const AppShell: React.FC = () => {
     </div>
   )
 }
+
+export const AppShell: React.FC = () => (
+  // Provider bọc ngoài để header (breadcrumb) đọc được tiêu đề do trang con đặt.
+  <PageTitleProvider>
+    <AppShellContent />
+  </PageTitleProvider>
+)

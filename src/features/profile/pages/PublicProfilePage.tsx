@@ -6,6 +6,7 @@ import type { UserProfile } from "../types"
 import { UserRatingSummary } from "@/features/reviews/components/UserRatingSummary"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
 import { useAuthStore } from "@/features/auth/store"
+import { usePageTitle } from "@/shared/hooks/usePageTitle"
 import { Button } from "@/components/ui/button"
 
 const certificateStatusStyle = (status: string) => {
@@ -27,6 +28,9 @@ export const PublicProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+
+  // Breadcrumb hiện tên người dùng thay vì nhãn chung "Hồ sơ người dùng".
+  usePageTitle(profile?.fullName)
 
   useEffect(() => {
     if (!userId) return

@@ -14,6 +14,7 @@ import { ContractSignedModal } from "@/features/contracts-projects/components/Co
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock, DollarSign, ShieldCheck, UserCheck, ShieldAlert, MessageSquare } from "lucide-react"
 import { UserLink } from "@/shared/components/UserLink"
+import { usePageTitle } from "@/shared/hooks/usePageTitle"
 
 export const JobProposalsPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>()
@@ -31,6 +32,9 @@ export const JobProposalsPage: React.FC = () => {
   // nên hiện ngay trong modal thay vì chỉ lấy project.id rồi bỏ qua toàn bộ object Contract.
   const [approvedContract, setApprovedContract] = useState<{ contract: Contract; projectId: number } | null>(null)
   const hasLoadedOnce = useRef(false)
+
+  // Nói rõ đang xem đề xuất của job nào, vì trang này luôn gắn với một job cụ thể.
+  usePageTitle(job?.title ? `Đề xuất: ${job.title}` : null)
 
   const fetchData = useCallback(async () => {
     if (!jobId) return

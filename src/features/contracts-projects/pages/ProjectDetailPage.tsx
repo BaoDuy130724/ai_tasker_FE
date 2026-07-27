@@ -25,6 +25,8 @@ import { ReviewSection } from "@/features/reviews/components/ReviewSection"
 import { UserBrief } from "@/shared/components/UserLink"
 import { MilestoneDeliverables } from "../components/MilestoneDeliverables"
 import { ProjectName } from "@/shared/components/ProjectName"
+import { useProjectName } from "@/shared/hooks/useProjectName"
+import { usePageTitle } from "@/shared/hooks/usePageTitle"
 import {
   DollarSign,
   ArrowLeft,
@@ -72,6 +74,10 @@ export const ProjectDetailPage: React.FC = () => {
   >(null)
   
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null)
+
+  // Project không có tên riêng — breadcrumb dùng lại đúng tên suy ra từ nguồn gốc dự án.
+  const { title: projectName } = useProjectName(project?.jobId, project?.serviceId)
+  usePageTitle(projectName)
 
   // Tăng lên sau mỗi lần nộp bài để MilestoneDeliverables tải lại.
   const [deliverableRefreshKey, setDeliverableRefreshKey] = useState(0)

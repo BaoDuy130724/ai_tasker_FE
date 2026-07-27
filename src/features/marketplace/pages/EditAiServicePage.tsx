@@ -8,6 +8,7 @@ import { useToast } from "@/shared/ui/use-toast"
 import { getServiceById, updateService, getCategories } from "../api"
 import type { Category } from "../types"
 import { Button } from "@/components/ui/button"
+import { usePageTitle } from "@/shared/hooks/usePageTitle"
 import { DollarSign, Clock, Plus, X, ArrowLeft } from "lucide-react"
 
 const serviceSchema = z.object({
@@ -34,6 +35,10 @@ export const EditAiServicePage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
+  // Tên lúc tải, không phải giá trị đang gõ trong form — breadcrumb không nên nhấp nháy theo từng ký tự.
+  const [loadedTitle, setLoadedTitle] = useState<string | null>(null)
+
+  usePageTitle(loadedTitle ? `Chỉnh sửa: ${loadedTitle}` : null)
 
   const {
     register,
@@ -88,6 +93,7 @@ export const EditAiServicePage: React.FC = () => {
         setCategories(cats)
         if (service) {
           setCoverImageUrl(service.coverImageUrl)
+          setLoadedTitle(service.title)
           reset({
             categoryId: service.categoryId,
             title: service.title,

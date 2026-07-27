@@ -7,6 +7,7 @@ import type { AiService } from "../types"
 import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
 import { UserLink } from "@/shared/components/UserLink"
+import { usePageTitle } from "@/shared/hooks/usePageTitle"
 import { DollarSign, Clock, Star, ArrowLeft, ShieldAlert, ShoppingBag, Sparkles, Heart, MessageSquare } from "lucide-react"
 
 export const AiServiceDetailPage: React.FC = () => {
@@ -20,6 +21,9 @@ export const AiServiceDetailPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isFavorited, setIsFavorited] = useState(false)
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
+
+  // Breadcrumb hiện tên gói dịch vụ thật thay vì nhãn tĩnh "Chi tiết dịch vụ".
+  usePageTitle(service?.title)
 
   useEffect(() => {
     const fetchServiceDetail = async () => {

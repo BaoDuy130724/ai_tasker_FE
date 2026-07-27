@@ -10,6 +10,7 @@ import { useAuthStore } from "@/features/auth/store"
 import { Button } from "@/components/ui/button"
 import { getApiErrorMessage } from "@/lib/utils"
 import { UserLink } from "@/shared/components/UserLink"
+import { usePageTitle } from "@/shared/hooks/usePageTitle"
 import { Calendar, DollarSign, ArrowLeft, ShieldAlert, Sparkles, UserCheck, Edit3 } from "lucide-react"
 
 export const JobDetailPage: React.FC = () => {
@@ -27,6 +28,9 @@ export const JobDetailPage: React.FC = () => {
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editForm, setEditForm] = useState({ title: "", description: "", budget: 0, deadline: "", skillsText: "" })
   const hasLoadedOnce = useRef(false)
+
+  // Breadcrumb hiện tên job thật thay vì nhãn tĩnh "Chi tiết công việc".
+  usePageTitle(job?.title)
 
   const fetchJobDetail = useCallback(async () => {
     if (!id) return
