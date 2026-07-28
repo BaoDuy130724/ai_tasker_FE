@@ -1,13 +1,43 @@
 import React from "react"
 import { Link } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store"
-import { Sparkles, ShieldCheck, Zap, MessageSquareCode, ArrowRight, Star, StarHalf, CheckCircle } from "lucide-react"
+import { Sparkles, ShieldCheck, Zap, MessageSquareCode, ArrowRight, Star, StarHalf, CheckCircle, ChevronUp, ChevronDown } from "lucide-react"
 
 export const HomePage: React.FC = () => {
   const { user } = useAuthStore()
 
+  const handleScrollUp = () => {
+    window.scrollBy({ top: -window.innerHeight * 0.8, behavior: "smooth" })
+  }
+
+  const handleScrollDown = () => {
+    window.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" })
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-primary/20 selection:text-primary relative">
+      {/* Khối nút mũi tên lên xuống cố định ở màn ngoài */}
+      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2 bg-white/90 backdrop-blur-md p-2 rounded-full border border-slate-200 shadow-xl">
+        <button
+          type="button"
+          onClick={handleScrollUp}
+          title="Cuộn lên"
+          aria-label="Cuộn lên"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+        <div className="h-px w-6 bg-slate-200 mx-auto" />
+        <button
+          type="button"
+          onClick={handleScrollDown}
+          title="Cuộn xuống"
+          aria-label="Cuộn xuống"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+        >
+          <ChevronDown className="h-6 w-6" />
+        </button>
+      </div>
       {/* Header / Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
