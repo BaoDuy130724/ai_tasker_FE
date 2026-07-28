@@ -5,41 +5,87 @@ import { Sparkles, ShieldCheck, Zap, MessageSquareCode, ArrowRight, Star, StarHa
 
 export const HomePage: React.FC = () => {
   const { user } = useAuthStore()
+  const [currentSlide, setCurrentSlide] = React.useState(0)
+  const [isTransitioning, setIsTransitioning] = React.useState(false)
 
-  const handleScrollUp = () => {
-    window.scrollBy({ top: -window.innerHeight * 0.8, behavior: "smooth" })
-  }
+  const slidesCount = 5
+  const currentSlideRef = React.useRef(currentSlide)
+  currentSlideRef.current = currentSlide
 
-  const handleScrollDown = () => {
-    window.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" })
-  }
+  const handleScrollUp = React.useCallback(() => {
+    if (currentSlideRef.current > 0 && !isTransitioning) {
+      setCurrentSlide((prev) => prev - 1)
+      setIsTransitioning(true)
+      setTimeout(() => setIsTransitioning(false), 950)
+    }
+  }, [isTransitioning])
+
+  const handleScrollDown = React.useCallback(() => {
+    if (currentSlideRef.current < slidesCount - 1 && !isTransitioning) {
+      setCurrentSlide((prev) => prev + 1)
+      setIsTransitioning(true)
+      setTimeout(() => setIsTransitioning(false), 950)
+    }
+  }, [isTransitioning])
+
+  React.useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      if (Math.abs(e.deltaY) < 15) return
+      
+      if (e.deltaY > 0) {
+        handleScrollDown()
+      } else {
+        handleScrollUp()
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp") {
+        e.preventDefault()
+        handleScrollUp()
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        handleScrollDown()
+      }
+    }
+
+    window.addEventListener("wheel", handleWheel, { passive: false })
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("wheel", handleWheel)
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [handleScrollUp, handleScrollDown])
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-primary/20 selection:text-primary relative">
-      {/* Khối nút mũi tên lên xuống cố định ở màn ngoài */}
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2 bg-white/90 backdrop-blur-md p-2 rounded-full border border-slate-200 shadow-xl">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-primary/20 selection:text-primary relative overflow-hidden">
+      {/* Khối trượt và điều hướng Lên/Xuống thông minh */}
+      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 bg-white/95 backdrop-blur-md p-1.5 rounded-full border border-slate-200/80 shadow-2xl transition-all duration-300 hover:shadow-primary/5 hover:border-primary/20">
         <button
           type="button"
           onClick={handleScrollUp}
-          title="Cuộn lên"
-          aria-label="Cuộn lên"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+          title="Slide trước"
+          aria-label="Slide trước"
+          disabled={currentSlide === 0}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-primary/10 hover:text-primary active:scale-90 disabled:opacity-20 disabled:pointer-events-none"
         >
-          <ChevronUp className="h-6 w-6" />
+          <ChevronUp className="h-6 w-6 transition-transform duration-200 hover:-translate-y-0.5" />
         </button>
         <div className="h-px w-6 bg-slate-200 mx-auto" />
         <button
           type="button"
           onClick={handleScrollDown}
-          title="Cuộn xuống"
-          aria-label="Cuộn xuống"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-95"
+          title="Slide tiếp theo"
+          aria-label="Slide tiếp theo"
+          disabled={currentSlide === slidesCount - 1}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-primary/10 hover:text-primary active:scale-90 disabled:opacity-20 disabled:pointer-events-none"
         >
-          <ChevronDown className="h-6 w-6" />
+          <ChevronDown className="h-6 w-6 transition-transform duration-200 hover:translate-y-0.5" />
         </button>
       </div>
       {/* Header / Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+      <header className="fixed top-0 left-0 w-full z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 font-bold text-xl tracking-tight text-primary">
             <Sparkles className="h-6 w-6" />
@@ -47,10 +93,10 @@ export const HomePage: React.FC = () => {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <a href="#features" className="hover:text-primary transition-colors">Tính năng</a>
-            <a href="#workflow" className="hover:text-primary transition-colors">Quy trình</a>
-            <a href="#security" className="hover:text-primary transition-colors">Bảo mật</a>
-            <a href="#about" className="hover:text-primary transition-colors">Về chúng tôi</a>
+            <button type="button" onClick={() => setCurrentSlide(1)} className="hover:text-primary transition-colors">Tính năng</button>
+            <button type="button" onClick={() => setCurrentSlide(2)} className="hover:text-primary transition-colors">Quy trình</button>
+            <button type="button" onClick={() => setCurrentSlide(3)} className="hover:text-primary transition-colors">Bảo mật</button>
+            <button type="button" onClick={() => setCurrentSlide(4)} className="hover:text-primary transition-colors">Về chúng tôi</button>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -80,9 +126,14 @@ export const HomePage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 bg-white">
-        {/* Hero Section */}
-        <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-gradient-to-b from-slate-50 to-white">
+      <main className="h-screen w-full overflow-hidden relative bg-white">
+        {/* Container tịnh tiến Slide dọc */}
+        <div 
+          className="transition-transform duration-1000 ease-in-out h-full w-full flex flex-col"
+          style={{ transform: `translateY(-${currentSlide * 100}%)` }}
+        >
+          {/* Hero Section (Slide 1) */}
+          <section id="hero" className="h-full w-full flex-shrink-0 flex items-center justify-center pt-20 px-6 overflow-hidden bg-gradient-to-b from-slate-50 to-white relative">
           {/* Radial glow background */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[350px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
           
@@ -146,8 +197,8 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* Feature Grid Section */}
-        <section id="features" className="py-20 bg-white border-t border-slate-100 relative">
+        {/* Feature Grid Section (Slide 2) */}
+        <section id="features" className="h-full w-full flex-shrink-0 flex items-center justify-center pt-20 px-6 overflow-hidden bg-white border-t border-slate-100 relative">
           <div className="max-w-7xl mx-auto px-6 space-y-12">
             <div className="text-center space-y-4 max-w-2xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">Tính Năng Nổi Bật Chỉ Có Tại AI Tasker</h2>
@@ -193,8 +244,8 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* Workflow Section */}
-        <section id="workflow" className="py-20 bg-slate-50 border-t border-slate-100">
+        {/* Workflow Section (Slide 3) */}
+        <section id="workflow" className="h-full w-full flex-shrink-0 flex items-center justify-center pt-20 px-6 overflow-hidden bg-slate-50 border-t border-slate-100">
           <div className="max-w-7xl mx-auto px-6 space-y-16">
             <div className="text-center space-y-4 max-w-2xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">Quy Trình Hoạt Động Liền Mạch</h2>
@@ -243,8 +294,8 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* Security & Escrow Highlight */}
-        <section id="security" className="py-20 bg-white border-t border-slate-100 relative overflow-hidden">
+        {/* Security & Escrow Highlight (Slide 4) */}
+        <section id="security" className="h-full w-full flex-shrink-0 flex items-center justify-center pt-20 px-6 overflow-hidden bg-white border-t border-slate-100 relative overflow-hidden">
           <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-violet-500/5 blur-[120px] pointer-events-none" />
           
           <div className="max-w-7xl mx-auto px-6 grid gap-12 md:grid-cols-2 items-center">
@@ -302,9 +353,10 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* CTA Callout */}
-        <section className="py-20 border-t border-slate-100 bg-slate-50">
-          <div className="max-w-4xl mx-auto px-6 text-center space-y-8">
+        {/* CTA Callout & Footer (Slide 5) */}
+        <section id="cta" className="h-full w-full flex-shrink-0 flex flex-col justify-between pt-24 pb-8 px-6 bg-slate-50 overflow-hidden">
+          <div /> {/* Đẩy nội dung CTA xuống giữa */}
+          <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900">Bắt Đầu Trải Nghiệm AI Tasker Hôm Nay</h2>
             <p className="text-slate-600 text-base max-w-xl mx-auto">
               Tham gia ngay để nhận hỗ trợ từ Trợ lý AI và trải nghiệm hệ thống làm việc Freelance bảo mật hàng đầu.
@@ -329,28 +381,29 @@ export const HomePage: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Footer lồng trong Slide 5 */}
+          <footer id="about" className="border-t border-slate-200/80 bg-slate-50 pt-8 text-slate-500 text-sm w-full">
+            <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span className="font-bold text-slate-900 text-base">AI Tasker</span>
+              </div>
+
+              <p className="text-center md:text-left text-xs text-slate-500">
+                © 2026 AI Tasker. Phát triển cho môn học PRN232 - ASP.NET Web API & Microservices.
+              </p>
+
+              <div className="flex gap-6">
+                <a href="#" className="hover:text-primary transition-colors">Điều khoản</a>
+                <a href="#" className="hover:text-primary transition-colors">Bảo mật</a>
+                <a href="#" className="hover:text-primary transition-colors">Liên hệ</a>
+              </div>
+            </div>
+          </footer>
         </section>
-      </main>
-
-      {/* Footer */}
-      <footer id="about" className="border-t border-slate-200/80 bg-white py-12 text-slate-500 text-sm">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span className="font-bold text-slate-900 text-base">AI Tasker</span>
-          </div>
-
-          <p className="text-center md:text-left text-xs text-slate-500">
-            © 2026 AI Tasker. Phát triển cho môn học PRN232 - ASP.NET Web API & Microservices.
-          </p>
-
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-primary transition-colors">Điều khoản</a>
-            <a href="#" className="hover:text-primary transition-colors">Bảo mật</a>
-            <a href="#" className="hover:text-primary transition-colors">Liên hệ</a>
-          </div>
-        </div>
-      </footer>
-    </div>
-  )
+      </div>
+    </main>
+  </div>
+)
 }
