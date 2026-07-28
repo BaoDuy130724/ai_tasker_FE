@@ -191,12 +191,15 @@ const ROUTE_META: RouteMeta[] = [
   },
 
   // Marketplace
-  { path: "/marketplace", parent: "/dashboard" },
+  {
+    path: "/marketplace",
+    parent: "/dashboard",
+  },
   {
     path: "/marketplace/services/:id",
     label: "Chi tiết dịch vụ",
-    parent: "/marketplace",
-    navKey: "/marketplace",
+    parent: (role) => (role === "Expert" ? "/expert/services" : "/marketplace"),
+    navKey: (role) => (role === "Expert" ? "/expert/services" : "/marketplace"),
     dynamic: true,
   },
   { path: "/favorites", parent: "/dashboard" },
@@ -206,8 +209,8 @@ const ROUTE_META: RouteMeta[] = [
   {
     path: "/client/orders/new",
     label: "Đặt mua dịch vụ",
-    parent: "/client/orders",
-    navKey: "/client/orders",
+    parent: (role) => (role === "Expert" ? "/expert/orders" : "/client/orders"),
+    navKey: (role) => (role === "Expert" ? "/expert/orders" : "/client/orders"),
   },
   { path: "/expert/orders", parent: "/dashboard" },
 
@@ -268,14 +271,25 @@ const resolveLabel = (meta: RouteMeta, role: Role | undefined): string =>
 
 /** Mục sidebar cần được đánh dấu active cho URL hiện tại (kể cả khi đang ở trang con). */
 export const resolveActiveNavKey = (pathname: string, role: Role | undefined): string | undefined => {
-  const meta = matchRouteMeta(pathname)
-  if (meta) {
+  let meta = matchRouteMeta(pathname)
+  const seen = new Set<string>()
+
+  while (meta) {
     const key = meta.navKey !== undefined ? unwrap(meta.navKey, role) : meta.path
     if (key && findNavItem(role, key)) return key
+
+    // Nếu route hiện tại (hoặc key của nó) không nằm trong sidebar role này, thử đi lên cha
+    const parentPath = meta.parent ? unwrap(meta.parent, role) : undefined
+    if (!parentPath || seen.has(parentPath)) break
+    seen.add(parentPath)
+    meta = ROUTE_META.find((r) => r.path === parentPath)
   }
-  // Fallback: Tìm mục nav nào trong sidebar mà pathname trùng hoặc bắt đầu bằng path của mục đó
+
+  // Fallback 2: Tìm mục nav nào trong sidebar mà pathname trùng hoặc bắt đầu bằng path của mục đó
   const allItems = getNavSections(role).flatMap((s) => s.items)
-  const matched = allItems.find((item) => item.to === pathname || (item.to !== "/dashboard" && pathname.startsWith(item.to)))
+  const matched = allItems.find(
+    (item) => item.to === pathname || (item.to !== "/dashboard" && pathname.startsWith(item.to))
+  )
   return matched?.to
 }
 
