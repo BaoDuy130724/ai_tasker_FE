@@ -15,7 +15,13 @@ const getBaseUrl = (service: string, useGateway: boolean) => {
     // features/admin/api.ts đã bắt đầu bằng "/admin/..." nên KHÔNG được ghép thêm
     // segment "admin" vào base, nếu không URL thành /api/admin/admin/* → 404.
     // (Verify live 2026-07-20: /api/admin/users → 200, /api/admin/admin/users → 404.)
-    if (service === "admin") return `${gatewayUrl}/api`
+    //
+    // `payment` cùng cảnh: Payment controller nào cũng `[Route("api/payment/...")]` và
+    // Gateway `payment-route` forward nguyên path `/api/payment/**`. Nếu ghép "payment"
+    // vào base thì gateway mode ra /api/payment/payment/* → 404, còn direct mode ra
+    // /api/wallet/me → cũng 404 vì service thật nghe ở /api/payment/wallet/me.
+    // Mẫu này (base = /api, path tự mang prefix) là mẫu DUY NHẤT đúng ở CẢ HAI mode.
+    if (service === "admin" || service === "payment") return `${gatewayUrl}/api`
     return `${gatewayUrl}/api/${service}`
   } else {
     switch (service) {
@@ -41,6 +47,8 @@ const getBaseUrl = (service: string, useGateway: boolean) => {
         return import.meta.env.VITE_FILE_SERVICE_URL || "http://localhost:5110"
       case "admin":
         return import.meta.env.VITE_ADMIN_SERVICE_URL || "http://localhost:5030"
+      case "payment":
+        return import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:5120"
       default:
         return gatewayUrl
     }
@@ -165,6 +173,9 @@ export const messagingApi = createServiceInstance("messaging")
 export const aiApi = createServiceInstance("ai")
 export const fileApi = createServiceInstance("file")
 export const adminApi = createServiceInstance("admin")
+// Envelope của Payment LỆCH chuẩn chung (statusCode là string) — dùng PaymentApiResponse<T>
+// trong features/payment/types.ts, đừng dùng lại ApiResponse.
+export const paymentApi = createServiceInstance("payment")
 
 // ---------------------------------------------------------------------------
 // Bootstrap khôi phục phiên sau F5.

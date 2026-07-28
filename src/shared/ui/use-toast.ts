@@ -8,10 +8,22 @@ import { createContext, useContext } from "react"
  */
 export type ToastVariant = "success" | "error" | "info"
 
+/**
+ * Nút hành động trong toast — dành cho lỗi mà người dùng TỰ SỬA ĐƯỢC và lối sửa nằm ở
+ * màn khác ("ví thiếu tiền" → sang màn nạp ví). Không có nó thì thông báo chỉ nói được
+ * "sai rồi" mà không chỉ được đường đi.
+ *
+ * Bấm nút cũng đóng luôn toast — người dùng đã rời khỏi ngữ cảnh của thông báo đó.
+ */
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 export interface ToastApi {
-  success: (title: string, description?: string) => void
-  error: (title: string, description?: string) => void
-  info: (title: string, description?: string) => void
+  success: (title: string, description?: string, action?: ToastAction) => void
+  error: (title: string, description?: string, action?: ToastAction) => void
+  info: (title: string, description?: string, action?: ToastAction) => void
 }
 
 export const ToastContext = createContext<ToastApi | null>(null)

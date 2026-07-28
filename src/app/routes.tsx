@@ -29,6 +29,9 @@ import { AdminCertificatePage } from "@/features/admin/pages/AdminCertificatePag
 import { AdminJobListPage } from "@/features/admin/pages/AdminJobListPage"
 import { AdminServiceListPage } from "@/features/admin/pages/AdminServiceListPage"
 import { AdminDisputeListPage } from "@/features/admin/pages/AdminDisputeListPage"
+import { AdminWithdrawalPage } from "@/features/payment/pages/AdminWithdrawalPage"
+import { WalletPage } from "@/features/payment/pages/WalletPage"
+import { WithdrawalPage } from "@/features/payment/pages/WithdrawalPage"
 import { ChatPage } from "@/features/messaging/pages/ChatPage"
 import { ProfilePage } from "@/features/profile/pages/ProfilePage"
 import { PublicProfilePage } from "@/features/profile/pages/PublicProfilePage"
@@ -58,6 +61,10 @@ export const AppRoutes: React.FC = () => {
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/profile/me" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<PublicProfilePage />} />
+          {/* Ví dùng chung cho mọi vai trò: Client nạp tiền để ký quỹ, Expert nhận tiền
+              từ ký quỹ rồi rút về ngân hàng. */}
+          <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/wallet/withdrawals" element={<WithdrawalPage />} />
 
           {/* Client Routes */}
           <Route element={<ProtectedRoute allowedRoles={["Client"]} />}>
@@ -87,6 +94,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/admin/services" element={<AdminServiceListPage />} />
             <Route path="/admin/certificates" element={<AdminCertificatePage />} />
             <Route path="/admin/disputes" element={<AdminDisputeListPage />} />
+            <Route path="/admin/withdrawals" element={<AdminWithdrawalPage />} />
           </Route>
         </Route>
       </Route>

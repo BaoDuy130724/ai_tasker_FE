@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react"
-import { ToastContext, type ToastApi, type ToastVariant } from "./use-toast"
+import { ToastContext, type ToastAction, type ToastApi, type ToastVariant } from "./use-toast"
 
 export interface ToastOptions {
   title: string
@@ -8,6 +8,8 @@ export interface ToastOptions {
   description?: string
   /** Mặc định: 5s, riêng lỗi 7s vì người dùng cần thời gian đọc. */
   duration?: number
+  /** Lối đi tiếp cho người dùng — xem ToastAction trong use-toast.ts. */
+  action?: ToastAction
 }
 
 interface ToastItem extends ToastOptions {
@@ -83,6 +85,18 @@ const ToastCard: React.FC<{ toast: ToastItem; onDismiss: (id: number) => void }>
         {toast.description && (
           <p className="text-xs leading-relaxed text-muted-foreground break-words">{toast.description}</p>
         )}
+        {toast.action && (
+          <button
+            type="button"
+            onClick={() => {
+              toast.action?.onClick()
+              dismiss()
+            }}
+            className="mt-1.5 rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-secondary/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
 
       <button
@@ -105,24 +119,29 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const push = useCallback((variant: ToastVariant, title: string, description?: string) => {
-    setToasts((prev) => {
-      const item: ToastItem = {
-        id: nextId.current++,
-        variant,
-        title,
-        description,
-        duration: variant === "error" ? 7000 : 5000,
-      }
-      return [...prev, item].slice(-MAX_TOASTS)
-    })
-  }, [])
+  const push = useCallback(
+    (variant: ToastVariant, title: string, description?: string, action?: ToastAction) => {
+      setToasts((prev) => {
+        const item: ToastItem = {
+          id: nextId.current++,
+          variant,
+          title,
+          description,
+          action,
+          // Toast có nút thì để lâu hơn: người dùng phải kịp đọc RỒI mới bấm được.
+          duration: action ? 12000 : variant === "error" ? 7000 : 5000,
+        }
+        return [...prev, item].slice(-MAX_TOASTS)
+      })
+    },
+    []
+  )
 
   const api = useMemo<ToastApi>(
     () => ({
-      success: (title, description) => push("success", title, description),
-      error: (title, description) => push("error", title, description),
-      info: (title, description) => push("info", title, description),
+      success: (title, description, action) => push("success", title, description, action),
+      error: (title, description, action) => push("error", title, description, action),
+      info: (title, description, action) => push("info", title, description, action),
     }),
     [push]
   )

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams, Link, useNavigate } from "react-router-dom"
 import { useSafeBack } from "@/shared/hooks/useSafeBack"
 import { useToast } from "@/shared/ui/use-toast"
 import { useConfirm } from "@/shared/ui/use-confirm"
@@ -20,7 +20,13 @@ import type { EscrowTransaction } from "../api"
 import type { Project, Milestone } from "../types"
 import { ProjectStatus } from "../types"
 import { Button } from "@/components/ui/button"
-import { getApiErrorMessage } from "@/lib/utils"
+import {
+  getApiErrorMessage,
+  isInsufficientBalanceError,
+  isServiceUnavailableError,
+} from "@/lib/utils"
+import { getMyWallet } from "@/features/payment/api"
+import { formatAmount } from "@/features/payment/currency"
 import { ReviewSection } from "@/features/reviews/components/ReviewSection"
 import { UserBrief } from "@/shared/components/UserLink"
 import { MilestoneDeliverables } from "../components/MilestoneDeliverables"
@@ -42,7 +48,9 @@ import {
   Send,
   Edit3,
   Gavel,
-  XCircle
+  XCircle,
+  Wallet,
+  Loader2
 } from "lucide-react"
 
 // Nhãn cho EscrowTransactionType (enum số từ BE): 0..4
@@ -58,6 +66,7 @@ const ESCROW_STATUS_STYLES = [
 export const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const goBack = useSafeBack()
+  const navigate = useNavigate()
   const toast = useToast()
   const confirm = useConfirm()
   const { user } = useAuthStore()
@@ -81,6 +90,12 @@ export const ProjectDetailPage: React.FC = () => {
 
   // Tăng lên sau mỗi lần nộp bài để MilestoneDeliverables tải lại.
   const [deliverableRefreshKey, setDeliverableRefreshKey] = useState(0)
+
+  // Số dư ví đọc lúc mở modal nạp ký quỹ. `null` = chưa đọc được (Payment lỗi/chưa lên) —
+  // khi đó KHÔNG chặn người dùng, cứ để BE phán quyết, vì đoán mò ở FE có thể chặn nhầm
+  // người thật sự có tiền.
+  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+  const [isCheckingWallet, setIsCheckingWallet] = useState(false)
 
   // Form states
   const [amountInput, setAmountInput] = useState(0)
@@ -141,23 +156,70 @@ export const ProjectDetailPage: React.FC = () => {
     fetchProjectDetails()
   }, [fetchProjectDetails])
 
+  /**
+   * Mở modal nạp ký quỹ.
+   *
+   * Điền sẵn ĐÚNG giá hợp đồng vì BE bắt `amount` bằng chính `proposedPrice` và chỉ cho nạp
+   * MỘT lần — để người dùng tự gõ chỉ tạo ra cơ hội sai, không tạo ra lựa chọn nào.
+   *
+   * Đồng thời đọc số dư ví: từ 2026-07-28 lệnh nạp này TRỪ TIỀN THẬT trong ví qua Payment
+   * service, nên thiếu tiền là 422. Biết trước thì báo ngay tại modal, đỡ bắt người dùng
+   * bấm rồi mới nhận lỗi.
+   */
+  const openDepositModal = useCallback(async () => {
+    if (!project) return
+    setAmountInput(project.proposedPrice)
+    setActiveModal("deposit")
+    setIsCheckingWallet(true)
+    setWalletBalance(null)
+    try {
+      const wallet = await getMyWallet()
+      setWalletBalance(wallet?.availableBalance ?? 0)
+    } catch (err) {
+      console.error("Không đọc được số dư ví:", err)
+      setWalletBalance(null)
+    } finally {
+      setIsCheckingWallet(false)
+    }
+  }, [project])
+
   const handleDeposit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
-    if (!project || amountInput <= 0) return
+    if (!project) return
     setIsSubmitting(true)
     try {
       await depositEscrow({
         projectId: project.id,
-        amount: amountInput,
+        // Luôn gửi đúng giá hợp đồng — không lấy từ ô nhập nữa.
+        amount: project.proposedPrice,
         idempotencyKey: generateIdempotencyKey(),
       })
-      toast.success(`Đã nạp $${amountInput} vào quỹ ký quỹ!`)
+      toast.success(
+        "Đã ký quỹ thành công!",
+        `${formatAmount(project.proposedPrice)} đã được trừ khỏi ví và chuyển vào quỹ ký quỹ của dự án.`
+      )
       setActiveModal(null)
       setAmountInput(0)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      toast.error("Nạp tiền thất bại.", getApiErrorMessage(err, ""))
+      // Hai ca lỗi MỚI của luồng nạp ký quỹ, khác nhau ở chỗ AI sửa được (mục 17.4 BE):
+      if (isInsufficientBalanceError(err)) {
+        // Người dùng tự sửa được → phải chỉ luôn đường đi, không chỉ báo "sai".
+        toast.error(
+          "Ví của bạn không đủ tiền để ký quỹ.",
+          `Dự án này cần ${formatAmount(project.proposedPrice)}. Hãy nạp thêm vào ví rồi quay lại ký quỹ — chưa có khoản nào bị trừ.`,
+          { label: "Nạp tiền vào ví", onClick: () => navigate("/wallet") }
+        )
+      } else if (isServiceUnavailableError(err)) {
+        // Người dùng KHÔNG sửa được → đừng bảo họ đi nạp tiền, sẽ nạp xong vẫn lỗi.
+        toast.error(
+          "Dịch vụ thanh toán đang không phản hồi.",
+          "Đây là sự cố phía hệ thống, không phải do ví của bạn. Vui lòng thử lại sau ít phút — chưa có khoản nào bị trừ."
+        )
+      } else {
+        toast.error("Ký quỹ thất bại.", getApiErrorMessage(err, "Vui lòng thử lại."))
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -173,13 +235,27 @@ export const ProjectDetailPage: React.FC = () => {
         amount: amountInput,
         idempotencyKey: generateIdempotencyKey(),
       })
-      toast.success(`Đã gửi yêu cầu rút $${amountInput}.`)
+      // ⚠️ Lệnh này CHỈ chuyển tiền từ ký quỹ về VÍ AI Tasker, không hề đụng tới ngân hàng.
+      // Thông báo cũ nói như thể tiền đã về tài khoản ngân hàng — người dùng ngồi đợi tiền
+      // không bao giờ tới vì còn thiếu hẳn một bước.
+      toast.success(
+        "Đã chuyển tiền từ ký quỹ về ví của bạn.",
+        `${formatAmount(amountInput)} hiện nằm trong ví AI Tasker. Muốn nhận về tài khoản ngân hàng, hãy tạo thêm một yêu cầu rút tiền.`,
+        { label: "Rút về ngân hàng", onClick: () => navigate("/wallet/withdrawals") }
+      )
       setActiveModal(null)
       setAmountInput(0)
       await fetchProjectDetails()
     } catch (err: any) {
       console.error(err)
-      toast.error("Rút tiền thất bại.", getApiErrorMessage(err, ""))
+      if (isServiceUnavailableError(err)) {
+        toast.error(
+          "Dịch vụ thanh toán đang không phản hồi.",
+          "Tiền vẫn nguyên trong quỹ ký quỹ. Vui lòng thử lại sau ít phút."
+        )
+      } else {
+        toast.error("Rút tiền thất bại.", getApiErrorMessage(err, "Vui lòng thử lại."))
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -454,7 +530,7 @@ export const ProjectDetailPage: React.FC = () => {
             {/* Nạp đúng một lần cho cả hợp đồng — đã có tiền thì ẩn nút đi, BE cũng chặn nạp lần hai. */}
             {isClient && !isProjectEnded && project.escrowTotalBalance === 0 && (
               <Button
-                onClick={() => setActiveModal("deposit")}
+                onClick={() => void openDepositModal()}
                 size="sm"
                 className="bg-primary text-primary-foreground font-semibold hover:bg-primary/90 flex items-center gap-1"
               >
@@ -472,7 +548,7 @@ export const ProjectDetailPage: React.FC = () => {
                 className="border-border hover:bg-secondary font-semibold flex items-center gap-1"
               >
                 <ArrowDownLeft className="h-3.5 w-3.5" />
-                Rút ${project.escrowAvailableBalance}
+                Rút {formatAmount(project.escrowAvailableBalance)} về ví
               </Button>
             )}
           </div>
@@ -730,35 +806,80 @@ export const ProjectDetailPage: React.FC = () => {
               Nạp tiền ký quỹ (Deposit)
             </h3>
             <p className="text-xs text-muted-foreground">
-              Nạp <strong>đúng ${project.proposedPrice} USD</strong> — toàn bộ giá trị hợp đồng, nạp
-              một lần duy nhất. Tiền được nền tảng giữ và chỉ chuyển dần cho Expert sau mỗi
-              milestone bạn nghiệm thu.
+              Số tiền được trừ từ <strong>ví AI Tasker</strong> của bạn và nạp một lần duy nhất cho
+              toàn bộ hợp đồng. Nền tảng giữ hộ, chỉ chuyển dần cho Expert sau mỗi milestone bạn
+              nghiệm thu.
             </p>
+
+            {/* Số tiền KHOÁ CỨNG: BE bắt đúng bằng giá hợp đồng, nên đây là thông tin để đọc
+                chứ không phải ô để điền. */}
             <div>
-              <label htmlFor="deposit-amount-input" className="block text-sm font-semibold mb-1.5">Số tiền nạp ($ USD)</label>
-              <input
-                id="deposit-amount-input"
-                type="number"
-                required
-                min={project.proposedPrice}
-                max={project.proposedPrice}
-                value={amountInput || ""}
-                onChange={(e) => setAmountInput(Number(e.target.value))}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder={String(project.proposedPrice)}
-              />
-              <button
-                type="button"
-                onClick={() => setAmountInput(project.proposedPrice)}
-                className="mt-1.5 text-xs font-semibold text-primary hover:underline"
-              >
-                Điền đúng giá hợp đồng (${project.proposedPrice})
-              </button>
+              <p className="block text-sm font-semibold mb-1.5">Số tiền ký quỹ</p>
+              <div className="w-full rounded-lg border border-input bg-secondary/30 px-3 py-2 text-sm font-bold text-foreground flex items-center justify-between">
+                <span>{formatAmount(project.proposedPrice)}</span>
+                <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                  Cố định theo hợp đồng
+                </span>
+              </div>
             </div>
+
+            {/* Đối chiếu với số dư ví trước khi bấm */}
+            {isCheckingWallet && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Đang kiểm tra số dư ví...
+              </p>
+            )}
+
+            {!isCheckingWallet && walletBalance !== null && walletBalance >= project.proposedPrice && (
+              <p className="flex items-center gap-1.5 text-xs text-emerald-600">
+                <Wallet className="h-3.5 w-3.5" />
+                Số dư ví khả dụng: <strong>{formatAmount(walletBalance)}</strong> — đủ để ký quỹ.
+              </p>
+            )}
+
+            {!isCheckingWallet && walletBalance !== null && walletBalance < project.proposedPrice && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                <p className="flex items-start gap-1.5 text-xs text-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+                  <span>
+                    Ví của bạn chỉ còn <strong>{formatAmount(walletBalance)}</strong>, thiếu{" "}
+                    <strong>{formatAmount(project.proposedPrice - walletBalance)}</strong> so với
+                    số cần ký quỹ. Hãy nạp thêm vào ví trước.
+                  </span>
+                </p>
+                <Link
+                  to="/wallet"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Wallet className="h-3.5 w-3.5" />
+                  Nạp tiền vào ví
+                </Link>
+              </div>
+            )}
+
+            {!isCheckingWallet && walletBalance === null && (
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+                Chưa đọc được số dư ví. Bạn vẫn có thể bấm ký quỹ — hệ thống sẽ báo lại nếu ví
+                không đủ tiền.
+              </p>
+            )}
+
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Hủy</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground">
-                {isSubmitting ? "Đang xử lý..." : "Xác nhận nạp"}
+              <Button
+                type="submit"
+                // Chỉ khoá khi CHẮC CHẮN thiếu tiền. Đọc ví lỗi (null) thì vẫn cho bấm —
+                // để BE quyết, đừng chặn nhầm người có tiền.
+                disabled={
+                  isSubmitting ||
+                  isCheckingWallet ||
+                  (walletBalance !== null && walletBalance < project.proposedPrice)
+                }
+                className="bg-primary text-primary-foreground"
+              >
+                {isSubmitting ? "Đang xử lý..." : "Xác nhận ký quỹ"}
               </Button>
             </div>
           </form>
@@ -778,14 +899,25 @@ export const ProjectDetailPage: React.FC = () => {
           <form onSubmit={handleWithdraw} className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-6 space-y-5">
             <h3 className="font-bold text-lg text-emerald-600 flex items-center gap-1.5">
               <ArrowDownLeft className="h-5 w-5" />
-              Rút tiền khả dụng (Withdraw)
+              Rút ký quỹ về ví
             </h3>
             <p className="text-xs text-muted-foreground">
-              Rút phần đã được Client nghiệm thu về tài khoản cá nhân — chỉ khả dụng khi dự án đã
-              đóng hoặc bị huỷ. Bạn có tối đa <strong>${project.escrowAvailableBalance} USD</strong>.
+              Chuyển phần đã được Client nghiệm thu từ quỹ ký quỹ về <strong>ví AI Tasker</strong> của
+              bạn — chỉ khả dụng khi dự án đã đóng hoặc bị huỷ. Bạn có tối đa{" "}
+              <strong>{formatAmount(project.escrowAvailableBalance)}</strong>.
+            </p>
+            {/* Nói rõ ngay tại đây thay vì chỉ trong toast sau khi rút: đây là lúc người dùng
+                đang hình dung "bấm xong là tiền về ngân hàng". */}
+            <p className="rounded-lg border border-border bg-secondary/20 p-3 text-xs text-muted-foreground">
+              Đây mới là <strong>bước 1/2</strong>. Tiền về tới ví chứ chưa về ngân hàng — sau đó
+              bạn cần tạo một yêu cầu rút tiền ở{" "}
+              <Link to="/wallet/withdrawals" className="font-semibold text-primary hover:underline">
+                màn hình rút tiền
+              </Link>{" "}
+              và chờ Admin duyệt.
             </p>
             <div>
-              <label htmlFor="withdraw-amount-input" className="block text-sm font-semibold mb-1.5">Số tiền muốn rút ($ USD)</label>
+              <label htmlFor="withdraw-amount-input" className="block text-sm font-semibold mb-1.5">Số tiền chuyển về ví</label>
               <input
                 id="withdraw-amount-input"
                 type="number"
@@ -801,7 +933,7 @@ export const ProjectDetailPage: React.FC = () => {
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Hủy</Button>
               <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 text-white hover:bg-emerald-700">
-                {isSubmitting ? "Đang xử lý..." : "Rút tiền"}
+                {isSubmitting ? "Đang xử lý..." : "Chuyển về ví"}
               </Button>
             </div>
           </form>

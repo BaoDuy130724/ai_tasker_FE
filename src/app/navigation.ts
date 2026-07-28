@@ -11,6 +11,8 @@ import {
   ShoppingBag,
   Heart,
   Scale,
+  Wallet,
+  Banknote,
   User as UserIcon,
 } from "lucide-react"
 
@@ -59,6 +61,10 @@ const NAV_SECTIONS: Record<Role, NavSection[]> = {
         { to: "/client/orders", label: "Đơn mua dịch vụ", icon: ShoppingBag },
       ],
     },
+    {
+      title: "Tài chính",
+      items: [{ to: "/wallet", label: "Ví của tôi", icon: Wallet }],
+    },
   ],
   Expert: [
     {
@@ -81,6 +87,10 @@ const NAV_SECTIONS: Record<Role, NavSection[]> = {
         { to: "/expert/orders", label: "Đơn đặt hàng", icon: ShoppingBag },
       ],
     },
+    {
+      title: "Tài chính",
+      items: [{ to: "/wallet", label: "Ví của tôi", icon: Wallet }],
+    },
   ],
   Admin: [
     {
@@ -95,6 +105,7 @@ const NAV_SECTIONS: Record<Role, NavSection[]> = {
         { to: "/admin/services", label: "Quản lý Dịch vụ", icon: Layers },
         { to: "/admin/certificates", label: "Duyệt Chứng chỉ", icon: Star },
         { to: "/admin/disputes", label: "Xử lý Tranh chấp", icon: Scale },
+        { to: "/admin/withdrawals", label: "Duyệt rút tiền", icon: Banknote },
       ],
     },
   ],
@@ -225,12 +236,23 @@ const ROUTE_META: RouteMeta[] = [
     dynamic: true,
   },
 
+  // Ví & rút tiền — dùng chung cho mọi role, nên `label` đặt thẳng ở đây thay vì để
+  // resolveLabel dò trong sidebar (Admin không có mục ví trong sidebar của mình).
+  { path: "/wallet", label: "Ví của tôi", parent: "/dashboard" },
+  {
+    path: "/wallet/withdrawals",
+    label: "Rút tiền về ngân hàng",
+    parent: "/wallet",
+    navKey: "/wallet",
+  },
+
   // Admin
   { path: "/admin/users", parent: "/dashboard" },
   { path: "/admin/jobs", parent: "/dashboard" },
   { path: "/admin/services", parent: "/dashboard" },
   { path: "/admin/certificates", parent: "/dashboard" },
   { path: "/admin/disputes", parent: "/dashboard" },
+  { path: "/admin/withdrawals", parent: "/dashboard" },
 ]
 
 // Route tĩnh luôn được thử trước route có tham số, để "/jobs/new" không rơi vào "/jobs/:id".
