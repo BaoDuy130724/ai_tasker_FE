@@ -264,7 +264,7 @@ export const matchRouteMeta = (pathname: string): RouteMeta | undefined =>
   DYNAMIC_ROUTES.find((r) => matchPath({ path: r.path, end: true }, pathname))
 
 const resolveLabel = (meta: RouteMeta, role: Role | undefined): string =>
-  (meta.label && unwrap(meta.label, role)) ?? findNavItem(role, meta.path)?.label ?? meta.path
+  (meta.label && unwrap(meta.label, role)) ?? findNavItem(role, meta.path)?.label ?? meta.path.replace(/^\//, "")
 
 /** Mục sidebar cần được đánh dấu active cho URL hiện tại (kể cả khi đang ở trang con). */
 export const resolveActiveNavKey = (pathname: string, role: Role | undefined): string | undefined => {
