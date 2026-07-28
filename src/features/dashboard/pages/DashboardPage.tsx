@@ -24,6 +24,8 @@ import {
   RefreshCw,
   PlusCircle,
   ArrowRight,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
@@ -503,19 +505,70 @@ export const DashboardPage: React.FC = () => {
     )
   }
 
-  switch (user.role) {
-    case "Client":
-      return renderClientDashboard()
-    case "Expert":
-      return renderExpertDashboard()
-    case "Admin":
-      return renderAdminDashboard()
-    default:
-      return (
-        <div className="p-6">
-          <h1 className="text-2xl font-bold">Chào mừng đến với AI Tasker</h1>
-          <p className="text-muted-foreground mt-2">Vui lòng đăng nhập bằng tài khoản có vai trò xác định.</p>
-        </div>
-      )
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
+  const handleScrollUp = () => {
+    if (containerRef.current) {
+      const parent = containerRef.current.parentElement
+      if (parent) {
+        parent.scrollBy({ top: -parent.clientHeight * 0.75, behavior: "smooth" })
+      }
+    }
   }
+
+  const handleScrollDown = () => {
+    if (containerRef.current) {
+      const parent = containerRef.current.parentElement
+      if (parent) {
+        parent.scrollBy({ top: parent.clientHeight * 0.75, behavior: "smooth" })
+      }
+    }
+  }
+
+  const getDashboardContent = () => {
+    switch (user.role) {
+      case "Client":
+        return renderClientDashboard()
+      case "Expert":
+        return renderExpertDashboard()
+      case "Admin":
+        return renderAdminDashboard()
+      default:
+        return (
+          <div className="p-6">
+            <h1 className="text-2xl font-bold">Chào mừng đến với AI Tasker</h1>
+            <p className="text-muted-foreground mt-2">Vui lòng đăng nhập bằng tài khoản có vai trò xác định.</p>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Khối điều hướng cuộn lên/xuống cố định phía bên phải */}
+      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 bg-card/90 backdrop-blur-md p-1.5 rounded-full border border-border shadow-lg">
+        <button
+          type="button"
+          onClick={handleScrollUp}
+          title="Cuộn lên"
+          aria-label="Cuộn lên"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-secondary hover:text-foreground active:scale-95"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+        <div className="h-px w-5 bg-border/60 mx-auto" />
+        <button
+          type="button"
+          onClick={handleScrollDown}
+          title="Cuộn xuống"
+          aria-label="Cuộn xuống"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-secondary hover:text-foreground active:scale-95"
+        >
+          <ChevronDown className="h-5 w-5" />
+        </button>
+      </div>
+
+      {getDashboardContent()}
+    </div>
+  )
 }
