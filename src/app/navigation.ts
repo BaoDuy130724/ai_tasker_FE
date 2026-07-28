@@ -269,10 +269,14 @@ const resolveLabel = (meta: RouteMeta, role: Role | undefined): string =>
 /** Mục sidebar cần được đánh dấu active cho URL hiện tại (kể cả khi đang ở trang con). */
 export const resolveActiveNavKey = (pathname: string, role: Role | undefined): string | undefined => {
   const meta = matchRouteMeta(pathname)
-  if (!meta) return undefined
-  const key = meta.navKey !== undefined ? unwrap(meta.navKey, role) : meta.path
-  // Chỉ sáng khi mục đó thực sự có trong sidebar của role hiện tại.
-  return key && findNavItem(role, key) ? key : undefined
+  if (meta) {
+    const key = meta.navKey !== undefined ? unwrap(meta.navKey, role) : meta.path
+    if (key && findNavItem(role, key)) return key
+  }
+  // Fallback: Tìm mục nav nào trong sidebar mà pathname trùng hoặc bắt đầu bằng path của mục đó
+  const allItems = getNavSections(role).flatMap((s) => s.items)
+  const matched = allItems.find((item) => item.to === pathname || (item.to !== "/dashboard" && pathname.startsWith(item.to)))
+  return matched?.to
 }
 
 export interface Crumb {
