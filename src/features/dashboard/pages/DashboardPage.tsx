@@ -204,7 +204,7 @@ export const DashboardPage: React.FC = () => {
             />
             <KpiTile
               label="Quỹ ký gửi (Escrow)"
-              value={`$${escrowTotal.toLocaleString("vi-VN")}`}
+              value={`${escrowTotal.toLocaleString("vi-VN")} VND`}
               hint="được bảo mật"
               icon={<DollarSign className="h-5 w-5 text-indigo-500" />}
             />
@@ -316,16 +316,16 @@ export const DashboardPage: React.FC = () => {
             />
             <KpiTile
               label="Chờ nghiệm thu"
-              value={`$${pendingBalance.toLocaleString("vi-VN")}`}
+              value={`${pendingBalance.toLocaleString("vi-VN")} VND`}
               hint="Client chưa duyệt"
               icon={<DollarSign className="h-5 w-5 text-indigo-500" />}
             />
             <KpiTile
               label="Đã nghiệm thu"
-              value={`$${earnedBalance.toLocaleString("vi-VN")}`}
+              value={`${earnedBalance.toLocaleString("vi-VN")} VND`}
               hint={
                 withdrawableBalance > 0
-                  ? `rút được $${withdrawableBalance.toLocaleString("vi-VN")}`
+                  ? `rút được ${withdrawableBalance.toLocaleString("vi-VN")} VND`
                   : "rút khi dự án đóng"
               }
               icon={<CheckCircle className="h-5 w-5 text-emerald-500" />}

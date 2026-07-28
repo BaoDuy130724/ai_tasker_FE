@@ -176,7 +176,7 @@ export const JobDetailPage: React.FC = () => {
             <span className="text-xs text-muted-foreground font-semibold">Ngân sách dự án</span>
             <span className="inline-flex items-center gap-1 rounded-xl bg-primary/10 text-primary px-4 py-1.5 text-lg font-bold border border-primary/20">
               <DollarSign className="h-5 w-5" />
-              {job.budget} USD
+              {job.budget?.toLocaleString("vi-VN")} VND
             </span>
           </div>
         </div>

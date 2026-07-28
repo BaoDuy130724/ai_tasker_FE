@@ -115,7 +115,7 @@ export const CreateOrderPage: React.FC = () => {
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <DollarSign className="h-4 w-4 text-emerald-500" /> Đơn giá trọn gói
             </span>
-            <strong className="text-foreground">${service.price} USD</strong>
+            <strong className="text-foreground">{service.price?.toLocaleString("vi-VN")} VND</strong>
           </div>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-muted-foreground">

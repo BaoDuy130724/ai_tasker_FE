@@ -168,7 +168,7 @@ export const AiServiceDetailPage: React.FC = () => {
               <p className="text-xs text-muted-foreground font-semibold uppercase">Đơn giá trọn gói</p>
               <p className="text-3xl font-extrabold text-primary flex items-center justify-center">
                 <DollarSign className="h-7 w-7" />
-                {service.price} USD
+                {service.price?.toLocaleString("vi-VN")} VND
               </p>
             </div>
 

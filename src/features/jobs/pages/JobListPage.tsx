@@ -185,7 +185,7 @@ export const JobListPage: React.FC = () => {
                     </Link>
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 text-emerald-600 px-2.5 py-0.5 text-xs font-semibold border border-emerald-500/20 whitespace-nowrap">
                       <DollarSign className="h-3 w-3" />
-                      {job.budget}
+                      {job.budget?.toLocaleString("vi-VN")} VND
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">

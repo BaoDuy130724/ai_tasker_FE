@@ -513,7 +513,7 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Tổng giá trị hợp đồng</p>
-            <p className="text-lg font-bold text-primary">${project.proposedPrice} USD</p>
+            <p className="text-lg font-bold text-primary">{formatAmount(project.proposedPrice)} VND</p>
           </div>
         </div>
       </div>
@@ -557,15 +557,15 @@ export const ProjectDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-secondary/20 border border-border/50 rounded-lg p-4">
             <p className="text-xs text-muted-foreground">Tổng số dư (Total)</p>
-            <p className="text-xl font-extrabold text-foreground mt-1">${project.escrowTotalBalance} USD</p>
+            <p className="text-xl font-extrabold text-foreground mt-1">{formatAmount(project.escrowTotalBalance)} VND</p>
           </div>
           <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-4">
             <p className="text-xs text-muted-foreground text-emerald-600">Đã nghiệm thu</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-1">${project.escrowAvailableBalance} USD</p>
+            <p className="text-xl font-extrabold text-emerald-600 mt-1">{formatAmount(project.escrowAvailableBalance)} VND</p>
           </div>
           <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-4">
             <p className="text-xs text-muted-foreground text-amber-600">Chưa nghiệm thu</p>
-            <p className="text-xl font-extrabold text-amber-600 mt-1">${project.escrowLockedBalance} USD</p>
+            <p className="text-xl font-extrabold text-amber-600 mt-1">{formatAmount(project.escrowLockedBalance)} VND</p>
           </div>
         </div>
 
@@ -590,7 +590,7 @@ export const ProjectDetailPage: React.FC = () => {
                       </span>
                       <span className="text-muted-foreground">{new Date(tx.createdAt).toLocaleString("vi-VN")}</span>
                     </div>
-                    <span className="font-bold text-foreground">${tx.amount}</span>
+                    <span className="font-bold text-foreground">{formatAmount(tx.amount)} VND</span>
                   </div>
                   {tx.note && <p className="text-muted-foreground pl-0.5">{tx.note}</p>}
                 </div>
@@ -704,7 +704,7 @@ export const ProjectDetailPage: React.FC = () => {
 
                       <div className="flex flex-row md:flex-col items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 justify-between">
                         <span className="text-sm font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded whitespace-nowrap">
-                          ${m.amount}
+                          {formatAmount(m.amount)} VND
                         </span>
                         
                         <div className="flex gap-1.5">

@@ -96,7 +96,7 @@ export const FavoritesPage: React.FC = () => {
                     <Clock className="h-3.5 w-3.5" /> {fav.service.deliveryTimeDays} ngày
                   </span>
                   <span className="flex items-center gap-0.5 font-bold text-emerald-600">
-                    <DollarSign className="h-3.5 w-3.5" /> {fav.service.price}
+                    <DollarSign className="h-3.5 w-3.5" /> {fav.service.price?.toLocaleString("vi-VN")} VND
                   </span>
                 </div>
               </div>

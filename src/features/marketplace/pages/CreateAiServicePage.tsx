@@ -85,12 +85,15 @@ export const CreateAiServicePage: React.FC = () => {
       try {
         const data = await getCategories()
         setCategories(data)
+        if (data.length > 0) {
+          setValue("categoryId", data[0].id)
+        }
       } catch (err) {
         console.error("Lỗi fetch categories:", err)
       }
     }
     fetchCats()
-  }, [])
+  }, [setValue])
 
   const handleGenerateDescription = async () => {
     if (!keywords.trim()) return
@@ -188,9 +191,15 @@ export const CreateAiServicePage: React.FC = () => {
                 {...register("categoryId", { valueAsNumber: true })}
                 className="w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
+                {categories.length === 0 ? (
+                  <option value={0}>Đang tải danh mục...</option>
+                ) : (
+                  categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -229,7 +238,7 @@ export const CreateAiServicePage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">
-                Giá bán trọn gói ($ USD)
+                Giá bán trọn gói (VND)
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

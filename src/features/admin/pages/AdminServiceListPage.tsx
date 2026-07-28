@@ -142,7 +142,7 @@ export const AdminServiceListPage: React.FC = () => {
                           className="inline-flex items-center gap-1.5 text-primary hover:underline font-semibold text-xs"
                         />
                         <span className="flex items-center gap-0.5 font-semibold text-emerald-600">
-                          <DollarSign className="h-3 w-3" /> {s.price}
+                          <DollarSign className="h-3 w-3" /> {s.price?.toLocaleString("vi-VN")} VND
                         </span>
                       </p>
                     </div>

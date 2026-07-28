@@ -209,7 +209,7 @@ export const MarketplacePage: React.FC = () => {
                   )}
                   <span className="absolute top-3 right-3 inline-flex items-center gap-0.5 rounded-xl bg-emerald-500 text-white px-3 py-1 text-xs font-extrabold shadow">
                     <DollarSign className="h-3.5 w-3.5" />
-                    {service.price}
+                    {service.price?.toLocaleString("vi-VN")} VND
                   </span>
                 </div>
 

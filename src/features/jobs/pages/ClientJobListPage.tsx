@@ -152,7 +152,7 @@ export const ClientJobListPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <DollarSign className="h-3.5 w-3.5 text-primary" />
-                    Ngân sách: <strong>${job.budget}</strong>
+                    Ngân sách: <strong>{job.budget?.toLocaleString("vi-VN")} VND</strong>
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />

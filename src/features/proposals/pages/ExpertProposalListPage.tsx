@@ -192,7 +192,7 @@ export const ExpertProposalListPage: React.FC = () => {
                   <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground bg-secondary/30 border px-3.5 py-2 rounded-xl">
                     <span className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-emerald-500" />
-                      ${proposal.proposedPrice}
+                      {proposal.proposedPrice?.toLocaleString("vi-VN")} VND
                     </span>
                     <span className="border-l h-4" />
                     <span className="flex items-center gap-1">

@@ -203,7 +203,7 @@ export const EditAiServicePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1.5">Giá bán trọn gói ($ USD)</label>
+              <label className="block text-sm font-semibold text-foreground mb-1.5">Giá bán trọn gói (VND)</label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />

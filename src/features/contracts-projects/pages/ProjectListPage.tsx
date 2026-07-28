@@ -102,7 +102,7 @@ export const ProjectListPage: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                      Trị giá hợp đồng: <strong>${proj.proposedPrice}</strong>
+                      Trị giá hợp đồng: <strong>{proj.proposedPrice?.toLocaleString("vi-VN")} VND</strong>
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />

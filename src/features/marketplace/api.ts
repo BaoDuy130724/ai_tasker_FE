@@ -62,8 +62,9 @@ export const deleteService = async (id: number) => {
 }
 
 export const getCategories = async () => {
-  const response = await marketplaceApi.get<Category[]>("/categories")
-  return response.data || []
+  const response = await marketplaceApi.get<ApiResponse<Category[]> | Category[]>("/categories")
+  if (Array.isArray(response.data)) return response.data
+  return (response.data as ApiResponse<Category[]>)?.data || []
 }
 
 // Favorites APIs

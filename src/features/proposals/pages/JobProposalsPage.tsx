@@ -168,7 +168,7 @@ export const JobProposalsPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 text-xs font-bold bg-secondary/20 p-2.5 rounded-lg border border-border/40 max-w-sm">
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-emerald-500" />
-                      Yêu cầu: ${prop.proposedPrice}
+                      Yêu cầu: {prop.proposedPrice?.toLocaleString("vi-VN")} VND
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4 text-primary" />

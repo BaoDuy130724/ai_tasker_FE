@@ -131,7 +131,7 @@ export const SubmitProposalPage: React.FC = () => {
             <div className="space-y-2 text-xs text-muted-foreground">
               <p className="flex items-center gap-1.5">
                 <DollarSign className="h-4 w-4 text-emerald-500" />
-                Ngân sách dự kiến: <strong>${job.budget}</strong>
+                Ngân sách dự kiến: <strong>{job.budget?.toLocaleString("vi-VN")} VND</strong>
               </p>
               <p className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
@@ -168,7 +168,7 @@ export const SubmitProposalPage: React.FC = () => {
             {/* Giá đề xuất */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">
-                Giá đề xuất của bạn ($ USD)
+                Giá đề xuất của bạn (VND)
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
