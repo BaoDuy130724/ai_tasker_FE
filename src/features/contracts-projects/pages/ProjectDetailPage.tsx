@@ -76,12 +76,12 @@ export const ProjectDetailPage: React.FC = () => {
   const [transactions, setTransactions] = useState<EscrowTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  
+
   // Dialog / Modal states
   const [activeModal, setActiveModal] = useState<
     "deposit" | "withdraw" | "createMilestone" | "submitDeliverable" | "requestRevision" | "openDispute" | null
   >(null)
-  
+
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null)
 
   // Project không có tên riêng — breadcrumb dùng lại đúng tên suy ra từ nguồn gốc dự án.
@@ -103,7 +103,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [deliverableForm, setDeliverableForm] = useState({ fileUrl: "", note: "" })
   const [revisionReason, setRevisionReason] = useState("")
   const [disputeForm, setDisputeForm] = useState({ description: "", evidenceFileUrl: "" })
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const hasLoadedOnce = useRef(false)
 
@@ -264,7 +264,7 @@ export const ProjectDetailPage: React.FC = () => {
   const handleCreateMilestone = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!project) return
-    
+
     // Trần của milestone là phần giá hợp đồng CHƯA được chia, không phải số dư Available.
     // Available giờ mang nghĩa "Expert đã nghiệm thu" nên lúc chia milestone nó luôn bằng 0 —
     // so với nó thì mọi milestone đều bị chặn.
@@ -525,7 +525,7 @@ export const ProjectDetailPage: React.FC = () => {
             <ShieldCheck className="h-5 w-5 text-primary" />
             Tài khoản Ký Quỹ (Escrow Account)
           </h3>
-          
+
           <div className="flex gap-2">
             {/* Nạp đúng một lần cho cả hợp đồng — đã có tiền thì ẩn nút đi, BE cũng chặn nạp lần hai. */}
             {isClient && !isProjectEnded && project.escrowTotalBalance === 0 && (
@@ -578,11 +578,10 @@ export const ProjectDetailPage: React.FC = () => {
                 <div key={tx.id} className="text-xs bg-secondary/10 border border-border/40 rounded-lg px-3 py-2 space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`font-bold uppercase text-[10px] rounded px-1.5 py-0.5 border ${
-                        tx.type === 0 || tx.type === 2
-                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                      }`}>
+                      <span className={`font-bold uppercase text-[10px] rounded px-1.5 py-0.5 border ${tx.type === 0 || tx.type === 2
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                        }`}>
                         {ESCROW_TYPE_LABELS[tx.type] ?? `#${tx.type}`}
                       </span>
                       <span className={`font-semibold uppercase text-[9px] rounded px-1.5 py-0.5 ${ESCROW_STATUS_STYLES[tx.status] ?? "bg-secondary text-muted-foreground"}`}>
@@ -609,7 +608,7 @@ export const ProjectDetailPage: React.FC = () => {
 
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-2">
           <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2 hidden md:block z-0" />
-          
+
           {steps.map((step, idx) => {
             const isCompleted = idx < currentStepIndex
             const isActive = idx === currentStepIndex
@@ -651,7 +650,7 @@ export const ProjectDetailPage: React.FC = () => {
                 <Layers className="h-5 w-5 text-primary" />
                 Mốc thanh toán (Milestones)
               </h3>
-              
+
               {isClient && (
                 <Button
                   onClick={() => setActiveModal("createMilestone")}
@@ -706,7 +705,7 @@ export const ProjectDetailPage: React.FC = () => {
                         <span className="text-sm font-extrabold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded whitespace-nowrap">
                           {formatAmount(m.amount)} VND
                         </span>
-                        
+
                         <div className="flex gap-1.5">
                           {/* Hành động của Expert: Nộp sản phẩm */}
                           {isExpert && m.status === 1 && (
@@ -759,7 +758,7 @@ export const ProjectDetailPage: React.FC = () => {
               <ShieldCheck className="h-5 w-5 text-primary" />
               Thông tin Hợp đồng
             </h3>
-            
+
             <div className="space-y-3.5 text-xs text-muted-foreground leading-relaxed">
               <div className="space-y-1.5">
                 <span className="block">Nhà tuyển dụng (Client):</span>
@@ -956,7 +955,7 @@ export const ProjectDetailPage: React.FC = () => {
               Tạo mốc thanh toán mới (Milestone)
             </h3>
             <p className="text-xs text-muted-foreground">Phân bổ tiền từ quỹ Khả dụng hiện có để đặt cọc cho mốc hoàn thành này.</p>
-            
+
             <div className="space-y-3">
               <div>
                 <label htmlFor="milestone-title-input" className="block text-sm font-semibold mb-1">Tiêu đề mốc</label>
@@ -1038,7 +1037,7 @@ export const ProjectDetailPage: React.FC = () => {
               <Send className="h-5 w-5" />
               Nộp sản phẩm bàn giao (Deliverable)
             </h3>
-            
+
             <div className="space-y-3">
               <div>
                 <label htmlFor="deliverable-url-input" className="block text-sm font-semibold mb-1">Đường dẫn sản phẩm (File / Link Github / Drive)</label>
@@ -1091,7 +1090,7 @@ export const ProjectDetailPage: React.FC = () => {
               <Edit3 className="h-5 w-5" />
               Yêu cầu chỉnh sửa lại (Revision)
             </h3>
-            
+
             <div>
               <label htmlFor="revision-reason-input" className="block text-sm font-semibold mb-1">Lý do yêu cầu & Nội dung cần sửa</label>
               <textarea
@@ -1131,7 +1130,7 @@ export const ProjectDetailPage: React.FC = () => {
               Mở Tranh Chấp khiếu nại (Open Dispute)
             </h3>
             <p className="text-xs text-muted-foreground">Admin sẽ vào can thiệp đóng băng Escrow và dựa trên mô tả để phán quyết phân chia tiền hoàn hoặc giải ngân.</p>
-            
+
             <div className="space-y-3">
               <div>
                 <label htmlFor="dispute-desc-input" className="block text-sm font-semibold mb-1">Mô tả lý do tranh chấp</label>

@@ -420,86 +420,86 @@ export const DashboardPage: React.FC = () => {
     const kpiValue = (n: number | undefined) => (isSynced ? n ?? "—" : "—")
 
     return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Admin Portal</h1>
-          <p className="text-muted-foreground mt-1">Giám sát hoạt động và quản lý hệ thống AI Tasker.</p>
-          <p className="text-xs mt-1.5">
-            {isSynced ? (
-              <span className="text-muted-foreground">
-                Số liệu tính đến {syncedAt!.toLocaleString("vi-VN")}
-              </span>
-            ) : (
-              <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                Chưa đồng bộ lần nào — bấm "Đồng bộ gRPC" để lấy số liệu thật.
-              </span>
-            )}
-          </p>
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight">Admin Portal</h1>
+            <p className="text-muted-foreground mt-1">Giám sát hoạt động và quản lý hệ thống AI Tasker.</p>
+            <p className="text-xs mt-1.5">
+              {isSynced ? (
+                <span className="text-muted-foreground">
+                  Số liệu tính đến {syncedAt!.toLocaleString("vi-VN")}
+                </span>
+              ) : (
+                <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                  Chưa đồng bộ lần nào — bấm "Đồng bộ gRPC" để lấy số liệu thật.
+                </span>
+              )}
+            </p>
+          </div>
+          <Button
+            onClick={handleRefreshKpi}
+            disabled={isRefreshing}
+            className="bg-primary text-primary-foreground font-semibold flex items-center gap-1.5 shadow-sm"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            Đồng bộ gRPC 🔄
+          </Button>
         </div>
-        <Button
-          onClick={handleRefreshKpi}
-          disabled={isRefreshing}
-          className="bg-primary text-primary-foreground font-semibold flex items-center gap-1.5 shadow-sm"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          Đồng bộ gRPC 🔄
-        </Button>
-      </div>
 
-      {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse h-28 rounded-xl bg-card border border-border" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiTile
-            label="Tổng số Users"
-            value={kpiValue(kpi?.totalUsers)}
-            hint={isSynced ? "Client / Expert" : "chưa đồng bộ"}
-            icon={<Users className="h-5 w-5 text-primary" />}
-          />
-          <KpiTile
-            label="Tổng số Jobs"
-            value={kpiValue(kpi?.totalJobs)}
-            hint={isSynced ? "đang hoạt động" : "chưa đồng bộ"}
-            icon={<Briefcase className="h-5 w-5 text-indigo-500" />}
-          />
-          <KpiTile
-            label="Tổng dịch vụ AI"
-            value={kpiValue(kpi?.totalServices)}
-            hint={isSynced ? "trên marketplace" : "chưa đồng bộ"}
-            icon={<Layers className="h-5 w-5 text-purple-500" />}
-          />
-          <KpiTile
-            label="Chứng chỉ chờ duyệt"
-            value={pendingCertCount}
-            hint="cần duyệt"
-            icon={<ShieldCheck className="h-5 w-5 text-amber-500" />}
-          />
-        </div>
-      )}
+        {isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse h-28 rounded-xl bg-card border border-border" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiTile
+              label="Tổng số Users"
+              value={kpiValue(kpi?.totalUsers)}
+              hint={isSynced ? "Client / Expert" : "chưa đồng bộ"}
+              icon={<Users className="h-5 w-5 text-primary" />}
+            />
+            <KpiTile
+              label="Tổng số Jobs"
+              value={kpiValue(kpi?.totalJobs)}
+              hint={isSynced ? "đang hoạt động" : "chưa đồng bộ"}
+              icon={<Briefcase className="h-5 w-5 text-indigo-500" />}
+            />
+            <KpiTile
+              label="Tổng dịch vụ AI"
+              value={kpiValue(kpi?.totalServices)}
+              hint={isSynced ? "trên marketplace" : "chưa đồng bộ"}
+              icon={<Layers className="h-5 w-5 text-purple-500" />}
+            />
+            <KpiTile
+              label="Chứng chỉ chờ duyệt"
+              value={pendingCertCount}
+              hint="cần duyệt"
+              icon={<ShieldCheck className="h-5 w-5 text-amber-500" />}
+            />
+          </div>
+        )}
 
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <h3 className="text-lg font-bold">Hoạt động hệ thống</h3>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link to="/admin/users" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
-            Quản lý người dùng
-          </Link>
-          <Link to="/admin/jobs" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
-            Kiểm duyệt Job
-          </Link>
-          <Link to="/admin/services" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
-            Kiểm duyệt Dịch vụ
-          </Link>
-          <Link to="/admin/disputes" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
-            Xử lý tranh chấp
-          </Link>
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="text-lg font-bold">Hoạt động hệ thống</h3>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link to="/admin/users" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
+              Quản lý người dùng
+            </Link>
+            <Link to="/admin/jobs" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
+              Kiểm duyệt Job
+            </Link>
+            <Link to="/admin/services" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
+              Kiểm duyệt Dịch vụ
+            </Link>
+            <Link to="/admin/disputes" className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary/40 transition-all">
+              Xử lý tranh chấp
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
     )
   }
 
